@@ -1,4 +1,4 @@
-name:                jsonpath-hs
+name:                jsonpath
 version:             0.1.0.0
 github:              "akshaymankar/jsonpath-hs"
 license:             BSD3
@@ -31,7 +31,7 @@ library:
   source-dirs: src
 
 tests:
-  jsonpath-hs-test:
+  jsonpath-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
