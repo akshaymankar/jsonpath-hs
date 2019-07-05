@@ -1,0 +1,58 @@
+{
+	"title" : "Indexed Subscript Operator",
+	"data" : [
+		"John Doe",
+		36,
+		"Architect",
+		"one",
+		"three",
+		"five"
+	],
+	"tests" : [{
+			"path" : "$[2]",
+			"result" : ["Architect"]
+		}, {
+			"path" : "$[-1]",
+			"result" : ["five"]
+		}, {
+			"path" : "$[10]",
+			"result" : false
+		}, {
+			"path" : "$[1:4]",
+			"result" : [36, "Architect", "one"]
+		}, {
+			"path" : "$[1:4:2]",
+			"result" : [36, "one"]
+		}, {
+			"path" : "$[:4:2]",
+			"result" : ["John Doe", "Architect"]
+		}, {
+			"path" : "$[1::2]",
+			"result" : [36, "one", "five"]
+		}, {
+			"path" : "$[::2]",
+			"result" : ["John Doe", "Architect", "three"]
+		}, {
+			"path" : "$[1:]",
+			"result" : [36, "Architect", "one", "three", "five"]
+		}, {
+			"path" : "$[:3]",
+			"result" : ["John Doe", 36, "Architect"]
+		}, {
+			"path" : "$[0,3]",
+			"result" : ["John Doe", "one"]
+		}, {
+			"path" : "$[0,1::2]",
+			"result" : ["John Doe", 36, "one", "five"]
+		}, {
+			"path" : "$[0:2,4:6]",
+			"result" : ["John Doe", 36, "three", "five"]
+		}, {
+			"path" : "$[0:2,4]",
+			"result" : ["John Doe", 36, "three"]
+		}, {
+			"path" : "$[*]",
+			"result" : ["John Doe", 36, "Architect", "one", "three", "five"]
+		}
+	]
+}

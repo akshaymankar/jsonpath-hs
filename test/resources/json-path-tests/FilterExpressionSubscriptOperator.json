@@ -1,0 +1,32 @@
+{
+	"title" : "Filter Expression Subscript Operator",
+	"data" : [4,
+		"string",
+		false,
+		[1, 2, 3], {
+			"index" : 1,
+			"name" : "John Doe",
+			"occupation" : "Architect"
+		}, {
+			"index" : 2,
+			"name" : "Jane Smith",
+			"occupation" : "Architect",
+			"color" : "blue"
+		}
+	],
+	"tests" : [{
+			"path" : "$[?(@.occupation == \"Architect\")]",
+			"result" : [{
+					"index" : 1,
+					"name" : "John Doe",
+					"occupation" : "Architect"
+				}, {
+					"index" : 2,
+					"name" : "Jane Smith",
+					"occupation" : "Architect",
+					"color" : "blue"
+				}
+			]
+		}
+	]
+}

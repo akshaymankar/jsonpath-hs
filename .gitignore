@@ -1,0 +1,6 @@
+.stack-work/
+jsonpath-hs.cabal
+*~
+dist-newstyle
+TAGS
+.dir-locals.el
