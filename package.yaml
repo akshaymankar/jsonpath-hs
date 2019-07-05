@@ -44,4 +44,4 @@ tests:
     - file-embed
     - hspec
     - hspec-attoparsec
-    - jsonpath-hs
+    - jsonpath
