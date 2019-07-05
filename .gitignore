@@ -1,5 +1,5 @@
 .stack-work/
-jsonpath-hs.cabal
+jsonpath.cabal
 *~
 dist-newstyle
 TAGS
