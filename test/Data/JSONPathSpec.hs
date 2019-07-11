@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -16,6 +17,10 @@ import Data.Text             (Text, unpack)
 import GHC.Generics
 import Test.Hspec
 import Test.Hspec.Attoparsec
+
+#if !MIN_VERSION_base (4,11,0)
+import Data.Semigroup ((<>))
+#endif
 
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.Lazy       as LazyText
