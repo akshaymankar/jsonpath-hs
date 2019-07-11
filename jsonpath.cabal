@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0fd70edaf57b4512e6be68ae9ccf935188482309fa80516e21084827c8bdf827
+-- hash: 737fbf2f4be471d9fd0541366b2f718c850bfdd5d1a8de4d1db4b5fa12834e1e
 
 name:           jsonpath
 version:        0.1.0.0
@@ -23,6 +23,10 @@ build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
+    test/resources/json-path-tests/DotOperator.json
+    test/resources/json-path-tests/FilterExpressionSubscriptOperator.json
+    test/resources/json-path-tests/IndexedSubscriptOperator.json
+    test/resources/json-path-tests/SearchOperator.json
 
 source-repository head
   type: git
