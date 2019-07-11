@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 145e7e956587d99c4f2cdbf8d8bc4379fd2e6c6adcce268baaeb98d9ff9a5f95
+-- hash: 4b5596942f26fb29d7787297913412686621fb6005a9a529e6e99af0e451773e
 
 name:           jsonpath
-version:        0.1.0.0
+version:        0.1.0.1
 synopsis:       Library to parse and execute JSONPath
 description:    Please see the README on GitHub at <https://github.com/akshaymankar/jsonpath-hs#readme>
 category:       Text, Web, JSON
