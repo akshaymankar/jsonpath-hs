@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 737fbf2f4be471d9fd0541366b2f718c850bfdd5d1a8de4d1db4b5fa12834e1e
+-- hash: 145e7e956587d99c4f2cdbf8d8bc4379fd2e6c6adcce268baaeb98d9ff9a5f95
 
 name:           jsonpath
 version:        0.1.0.0
@@ -18,7 +18,7 @@ maintainer:     itsakshaymankar@gmail.com
 copyright:      Akshay Mankar
 license:        BSD3
 license-file:   LICENSE
-tested-with:    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.4
+tested-with:    GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.4
 build-type:     Simple
 extra-source-files:
     README.md
@@ -46,7 +46,7 @@ library
   build-depends:
       aeson >=1.4.2 && <1.5
     , attoparsec >=0.13.2 && <0.14
-    , base >=4.7 && <5
+    , base >=4.9 && <5
     , text >=1.2.3 && <1.3
     , unordered-containers >=0.2.10 && <0.3
     , vector >=0.12.0 && <0.13
@@ -67,7 +67,7 @@ test-suite jsonpath-test
       aeson >=1.4.2 && <1.5
     , aeson-casing
     , attoparsec >=0.13.2 && <0.14
-    , base >=4.7 && <5
+    , base >=4.9 && <5
     , bytestring
     , file-embed
     , hspec
