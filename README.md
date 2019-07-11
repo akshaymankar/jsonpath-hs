@@ -1,5 +1,9 @@
 # jsonpath-hs
 
+
+
+[![Build Status](https://travis-ci.org/akshaymankar/jsonpath-hs.svg?branch=master)](https://travis-ci.org/akshaymankar/jsonpath-hs) [![Matrix Build](https://matrix.hackage.haskell.org/api/v2/packages/jsonpath/badge)](https://matrix.hackage.haskell.org/package/jsonpath)
+
 Implementation of jsonpath as [described by Steffen Göessner](https://goessner.net/articles/JsonPath/).
 
 ## State of this library
