@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ff8115d2cf5f50395f582808315f02def84182d47a408362bc20643603645c27
+-- hash: 0fd70edaf57b4512e6be68ae9ccf935188482309fa80516e21084827c8bdf827
 
 name:           jsonpath
 version:        0.1.0.0
@@ -18,7 +18,7 @@ maintainer:     itsakshaymankar@gmail.com
 copyright:      Akshay Mankar
 license:        BSD3
 license-file:   LICENSE
-tested-with:    ghc ==7.10.3 || ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.4
+tested-with:    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.4
 build-type:     Simple
 extra-source-files:
     README.md
@@ -57,6 +57,8 @@ test-suite jsonpath-test
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-tool-depends:
+      hspec-discover:hspec-discover
   build-depends:
       aeson >=1.4.2 && <1.5
     , aeson-casing
