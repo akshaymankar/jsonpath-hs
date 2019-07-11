@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Data.JSONPath.Execute
   (executeJSONPath, executeJSONPathEither, executeJSONPathElement)
 where
@@ -8,6 +9,10 @@ import Data.Function       ((&))
 import Data.HashMap.Strict as Map
 import Data.JSONPath.Types
 import Data.Text           (unpack)
+
+#if !MIN_VERSION_base (4,11,0)
+import Data.Semigroup ((<>))
+#endif
 
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Vector    as V
