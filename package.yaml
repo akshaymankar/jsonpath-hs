@@ -9,6 +9,7 @@ copyright:           "Akshay Mankar"
 extra-source-files:
 - README.md
 - ChangeLog.md
+- test/resources/json-path-tests/*.json
 
 # Metadata used when publishing your package
 synopsis:            Library to parse and execute JSONPath
