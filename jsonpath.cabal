@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f9f57d6127f35483046fcb4150e6562f3b2f72b8e2830676d241b5dcaf11d7a5
+-- hash: 798535d2582e7dd6a5789d1997f781da9ed0092c2feeb4e31e96c2228218c513
 
 name:           jsonpath
 version:        0.1.0.1
@@ -44,12 +44,12 @@ library
   hs-source-dirs:
       src
   build-depends:
-      aeson >=1.4.2 && <1.5
-    , attoparsec >=0.13.2 && <0.14
+      aeson >=1.1 && <1.5
+    , attoparsec >=0.13 && <0.14
     , base >=4.9 && <5
-    , text >=1.2.3 && <1.3
-    , unordered-containers >=0.2.9 && <0.3
-    , vector >=0.12.0 && <0.13
+    , text >=1.2 && <1.3
+    , unordered-containers >=0.2.8 && <0.3
+    , vector >=0.12 && <0.13
   default-language: Haskell2010
 
 test-suite jsonpath-test
@@ -64,16 +64,16 @@ test-suite jsonpath-test
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
-      aeson >=1.4.2 && <1.5
+      aeson >=1.1 && <1.5
     , aeson-casing
-    , attoparsec >=0.13.2 && <0.14
+    , attoparsec >=0.13 && <0.14
     , base >=4.9 && <5
     , bytestring
     , file-embed
     , hspec
     , hspec-attoparsec
     , jsonpath
-    , text >=1.2.3 && <1.3
-    , unordered-containers >=0.2.9 && <0.3
-    , vector >=0.12.0 && <0.13
+    , text >=1.2 && <1.3
+    , unordered-containers >=0.2.8 && <0.3
+    , vector >=0.12 && <0.13
   default-language: Haskell2010
