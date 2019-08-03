@@ -20,7 +20,7 @@ category:            Text, Web, JSON
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/akshaymankar/jsonpath-hs#readme>
 
-tested-with: GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.4
+tested-with: GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5
 
 dependencies:
 - aeson                >= 1.1 && < 1.5
