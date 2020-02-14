@@ -1,5 +1,5 @@
 module Data.JSONPath.Types
-  ( BegingingPoint(..)
+  ( BeginningPoint(..)
   , Condition(..)
   , Literal(..)
   , JSONPathElement(..)
@@ -11,7 +11,7 @@ where
 import Data.Text
 import Data.JSONPath.ExecutionResult
 
-data BegingingPoint = Root
+data BeginningPoint = Root
                     | CurrentObject
   deriving (Show, Eq)
 
@@ -40,6 +40,6 @@ data JSONPathElement  = KeyChild Text
                       | AnyChild
                       | Slice SliceElement
                       | SliceUnion SliceElement SliceElement
-                      | Filter BegingingPoint [JSONPathElement] Condition Literal
+                      | Filter BeginningPoint [JSONPathElement] Condition Literal
                       | Search [JSONPathElement]
   deriving (Show, Eq)

@@ -15,15 +15,15 @@ jsonPath = do
 
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement = do
-    (keyChildDot <?> "keyChldDot")
+    (keyChildDot <?> "keyChildDot")
     <|> (keyChildBracket <?> "keyChildBracket")
     <|> (keyChildren <?> "keyChildren")
     <|> (anyChild <?> "anyChild")
     <|> (slice <?> "slice")
     <|> (sliceUnion <?> "sliceUnion")
     <|> (filterParser <?> "filterParser")
-    <|> (search <?> "serach")
-    <|> (searchBeginingWithSlice <?> "serachBegingingWithSlice")
+    <|> (search <?> "search")
+    <|> (searchBeginningWithSlice <?> "searchBeginningWithSlice")
 
 slice :: Parser JSONPathElement
 slice = Slice <$> ignoreSurroundingSqBr sliceWithoutBrackets
@@ -121,7 +121,7 @@ sliceUnion = ignoreSurroundingSqBr $  do
 filterParser :: Parser JSONPathElement
 filterParser = do
   _ <- string "[?(" <?> "[?("
-  b <- beginingPoint <?> "begining point"
+  b <- beginningPoint <?> "beginning point"
   js <- jsonPath <?> "jsonPathElements"
   c <- condition <?> "condition"
   l <- literal <?> "literal"
@@ -136,16 +136,16 @@ search = do
     then Search <$> many1 jsonPathElement
     else  fail "not a search element"
 
-searchBeginingWithSlice :: Parser JSONPathElement
-searchBeginingWithSlice = do
+searchBeginningWithSlice :: Parser JSONPathElement
+searchBeginningWithSlice = do
   _ <- string ".."
   isBracket <- (== '[') <$> peekChar'
   if isBracket
     then Search <$> many1 jsonPathElement
     else  fail "not a search element"
 
-beginingPoint :: Parser BegingingPoint
-beginingPoint = do
+beginningPoint :: Parser BeginningPoint
+beginningPoint = do
   ((char '$' $> Root) <|> (char '@' $> CurrentObject))
 
 condition :: Parser Condition
