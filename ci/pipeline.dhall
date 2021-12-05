@@ -13,7 +13,6 @@ let mainBranch =
           Git.Source.render
             Git.Source::{
             , uri = "https://github.com/akshaymankar/jsonpath-hs"
-            , branch = Some "cabal"
             }
       }
 
