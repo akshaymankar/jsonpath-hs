@@ -41,7 +41,7 @@ library
   hs-source-dirs:
       src
   build-depends:
-      aeson >=1.1 && <2
+      aeson >=2
     , attoparsec >=0.13
     , base >=4.9 && <5
     , text >=1.2
