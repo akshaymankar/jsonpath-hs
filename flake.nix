@@ -29,6 +29,7 @@
             paths = [
               pkgs.haskell.compiler.ghc901
               pkgs.haskellPackages.cabal-install
+              pkgs.wget
               pkgs.pkgconfig
               pkgs.binutils
             ];
@@ -38,6 +39,7 @@
             paths = [
               pkgs.haskell.compiler.ghc8107
               pkgs.haskellPackages.cabal-install
+              pkgs.wget
               pkgs.pkgconfig
               pkgs.binutils
             ];
@@ -47,6 +49,7 @@
             paths = [
               pkgs.haskell.compiler.ghc884
               pkgs.haskellPackages.cabal-install
+              pkgs.wget
               pkgs.pkgconfig
               pkgs.binutils
             ];
