@@ -1,0 +1,7 @@
+cradle:
+  cabal:
+    - path: "src"
+      component: "lib:jsonpath"
+
+    - path: "test"
+      component: "jsonpath:test:jsonpath-test"

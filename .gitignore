@@ -3,4 +3,4 @@
 dist-newstyle
 TAGS
 .dir-locals.el
-jsonpath.cabal
+.direnv
