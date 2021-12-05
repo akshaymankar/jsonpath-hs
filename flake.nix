@@ -24,6 +24,9 @@
               pkgs.binutils
             ];
           };
+          jsonpath-ghc901 = pkgs.haskell.packages.ghc901.callPackage ./default.nix {};
+          jsonpath-ghc8107 = pkgs.haskell.packages.ghc8107.callPackage ./default.nix {};
+          jsonpath-ghc884 = pkgs.haskell.packages.ghc884.callPackage ./default.nix {};
           ci-env-ghc901 = pkgs.buildEnv {
             name = "jsonpath-hs-ci";
             paths = [
