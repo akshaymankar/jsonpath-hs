@@ -26,6 +26,7 @@
 
               # For CI
               pkgs.jq
+              pkgs.dhall
               pkgs.dhall-json
               pkgs.fly
             ];
