@@ -1,11 +1,7 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
---
--- see: https://github.com/sol/hpack
-
 name:           jsonpath
-version:        0.2.0.0
+version:        0.2.1.0
 synopsis:       Library to parse and execute JSONPath
 description:    Please see the README on GitHub at <https://github.com/akshaymankar/jsonpath-hs#readme>
 category:       Text, Web, JSON

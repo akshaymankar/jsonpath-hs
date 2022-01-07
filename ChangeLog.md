@@ -1,5 +1,9 @@
 # Changelog for jsonpath-hs
 
+## v0.2.1.0
+
+* Support and require aeson >= 2
+
 ## v0.2.0.0
 
 * BreakingChange: Fix typo in `BeginningPoint`.
