@@ -6,7 +6,8 @@ where
 import Data.Aeson
 import Data.Aeson.Text
 import Data.Function       ((&))
-import Data.HashMap.Strict as Map
+import qualified Data.Aeson.KeyMap as Map
+import qualified Data.Aeson.Key as Key
 import Data.JSONPath.Types
 import Data.Text           (unpack)
 
@@ -28,12 +29,12 @@ executeJSONPathEither js val = resultToEither $ executeJSONPath js val
 executeJSONPathElement :: JSONPathElement -> Value -> ExecutionResult Value
 executeJSONPathElement (KeyChild key) val =
   case val of
-    Object o -> Map.lookup key o
-                & (maybeToResult (notFoundErr key o))
+    Object o -> Map.lookup (Key.fromText key) o
+                & maybeToResult (notFoundErr key o)
     _ -> ResultError $ expectedObjectErr val
-executeJSONPathElement (AnyChild) val =
+executeJSONPathElement AnyChild val =
   case val of
-    Object o -> ResultList $ Map.elems o
+    Object o -> ResultList . map snd $ Map.toList o
     Array a  -> ResultList $ V.toList a
     _        -> ResultError $ expectedObjectErr val
 executeJSONPathElement (Slice slice) val =
@@ -63,7 +64,7 @@ executeJSONPathElement s@(Search js) val =
      else ResultList $ x ++ y
 
 valMap :: ToJSON b => (Value -> ExecutionResult b) -> Value -> [ExecutionResult b]
-valMap f v@(Object o) = elems $ Map.map f o
+valMap f v@(Object o) = map snd . Map.toList $ Map.map f o
 valMap f (Array a) = V.toList $ V.map f a
 valMap _ v = pure $ ResultError $ "Expected object or array, found " <> (encodeJSONToString v)
 
