@@ -23,6 +23,8 @@ let runTestsWith
                   }
                 , inputs = Some
                   [ Concourse.schemas.TaskInput::{ name = repo.name } ]
+                , params = Some
+                    (toMap { CACHIX_AUTH_TOKEN = Some "((cachix-token))" })
                 , run = Concourse.schemas.TaskRunConfig::{
                   , path = "sh"
                   , args = Some
