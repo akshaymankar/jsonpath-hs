@@ -7,7 +7,7 @@ data ExecutionResult a = ResultList [a]
 instance Functor ExecutionResult where
   fmap f (ResultList xs)   = ResultList $ Prelude.map f xs
   fmap f (ResultValue x)   = ResultValue $ f x
-  fmap f (ResultError err) = ResultError err
+  fmap _ (ResultError err) = ResultError err
 
 instance Applicative ExecutionResult where
   pure = ResultValue
@@ -21,7 +21,7 @@ instance Applicative ExecutionResult where
 instance Monad ExecutionResult where
   (>>=) (ResultValue x) f = f x
   (>>=) (ResultList xs) f = concatResults $ Prelude.map f xs
-  (>>=) (ResultError e) f = ResultError e
+  (>>=) (ResultError e) _ = ResultError e
 
 concatResults :: [ExecutionResult a] -> ExecutionResult a
 concatResults [] = ResultList []

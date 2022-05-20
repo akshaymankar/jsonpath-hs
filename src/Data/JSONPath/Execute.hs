@@ -9,7 +9,7 @@ import Data.Function       ((&))
 import qualified Data.Aeson.KeyMap as Map
 import qualified Data.Aeson.Key as Key
 import Data.JSONPath.Types
-import Data.Text           (unpack)
+import Data.Text           (unpack, Text)
 
 #if !MIN_VERSION_base (4,11,0)
 import Data.Semigroup ((<>))
@@ -19,7 +19,7 @@ import qualified Data.Text.Lazy as LazyText
 import qualified Data.Vector    as V
 
 executeJSONPath :: [JSONPathElement] -> Value -> ExecutionResult Value
-executeJSONPath [] val = ResultError "empty json path"
+executeJSONPath [] _ = ResultError "empty json path"
 executeJSONPath (j:[]) val = executeJSONPathElement j val
 executeJSONPath (j:js) val = executeJSONPath js =<< executeJSONPathElement j val
 
@@ -53,7 +53,7 @@ executeJSONPathElement (Filter _ jsonPath cond lit) val =
         & zip l
         & excludeSndErrors
         & Prelude.foldr (\(x,ys) acc -> if length ys == 1 then (x, head ys):acc else acc) []
-        & Prelude.filter (\(origVal, exprVal) -> executeCondition exprVal cond lit)
+        & Prelude.filter (\(_, exprVal) -> executeCondition exprVal cond lit)
         & Prelude.map fst
     _ -> ResultError $ expectedArrayErr val
 executeJSONPathElement s@(Search js) val =
@@ -64,13 +64,22 @@ executeJSONPathElement s@(Search js) val =
      else ResultList $ x ++ y
 
 valMap :: ToJSON b => (Value -> ExecutionResult b) -> Value -> [ExecutionResult b]
-valMap f v@(Object o) = map snd . Map.toList $ Map.map f o
+valMap f (Object o) = map snd . Map.toList $ Map.map f o
 valMap f (Array a) = V.toList $ V.map f a
 valMap _ v = pure $ ResultError $ "Expected object or array, found " <> (encodeJSONToString v)
 
 executeCondition :: Value -> Condition -> Literal -> Bool
-executeCondition (Number n1) Equal (LitNumber n2) = n1 == (fromInteger $ toInteger n2)
+executeCondition val NotEqual lit = not $ executeCondition val Equal lit
+executeCondition (Number n1) Equal (LitNumber n2) = n1 == realToFrac n2
 executeCondition (String s1) Equal (LitString s2) = s1 == s2
+executeCondition _ Equal _ = False
+executeCondition val GreaterThan lit =
+  not (executeCondition val SmallerThan lit) &&  not (executeCondition val Equal lit)
+executeCondition val GreaterEqualThan lit = not (executeCondition val SmallerThan lit)
+executeCondition (Number n1) SmallerThan (LitNumber n2) = n1 < realToFrac n2
+executeCondition (String s1) SmallerThan (LitString s2) = s1 < s2
+executeCondition val SmallerEqualThan lit = not (executeCondition val GreaterThan lit)
+executeCondition _ _ _ = False
 
 executeSliceElement :: SliceElement -> V.Vector Value -> ExecutionResult Value
 executeSliceElement (SingleIndex i) v                = if i < 0
@@ -101,12 +110,19 @@ excludeSndErrors :: [(c, ExecutionResult a)] -> [(c, [a])]
 excludeSndErrors xs = Prelude.foldr accumulateFn ([] :: [(c, b)]) xs where
   accumulateFn (x, ResultList ys) acc = (x, ys):acc
   accumulateFn (x, ResultValue y) acc = (x, [y]):acc
-  accumulateFn (x, _) acc             = acc
+  accumulateFn _ acc             = acc
 
 encodeJSONToString :: ToJSON a => a -> String
 encodeJSONToString x = LazyText.unpack $ encodeToLazyText x
 
+notFoundErr :: ToJSON a => Text -> a -> String
 notFoundErr key o = "expected key " <> unpack key <> " in object " <> (encodeJSONToString o)
+
+invalidIndexErr :: (ToJSON a) => Int -> a -> String
 invalidIndexErr i a = "index " <> show i <> " invalid for array " <> (encodeJSONToString a)
+
+expectedObjectErr :: ToJSON a => a -> String
 expectedObjectErr val = "expected object, found " <> (encodeJSONToString val)
+
+expectedArrayErr :: ToJSON a => a -> String
 expectedArrayErr val = "expected array, found " <> (encodeJSONToString val)
