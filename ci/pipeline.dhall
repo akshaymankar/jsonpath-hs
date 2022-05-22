@@ -11,9 +11,7 @@ let mainBranch =
       , icon = Some "git"
       , source =
           Git.Source.render
-            Git.Source::{
-            , uri = "https://github.com/akshaymankar/jsonpath-hs"
-            }
+            Git.Source::{ uri = "https://github.com/akshaymankar/jsonpath-hs" }
       }
 
 let prResource =
@@ -51,7 +49,7 @@ let mainBranchJob =
             , resource = mainBranch
             , trigger = Some True
             }
-        , runTestsWith mainBranch "ghc901"
+        , runTestsWith mainBranch "ghc902"
         , runTestsWith mainBranch "ghc8107"
         , runTestsWith mainBranch "ghc884"
         ]
@@ -134,11 +132,11 @@ let prJob =
       , plan =
         [ Concourse.helpers.getStep
             Concourse.schemas.GetStep::{ resource = pr, trigger = Some True }
-        , markCheckPending [ "ghc901", "ghc8107", "ghc884" ]
-        , runPRTestsWithHooks "ghc901"
+        , markCheckPending [ "ghc902", "ghc8107", "ghc884" ]
+        , runPRTestsWithHooks "ghc902"
         , runPRTestsWithHooks "ghc8107"
         , runPRTestsWithHooks "ghc884"
         ]
       }
 
-in  Concourse.render.pipeline [ mainBranchJob, prJob]
+in  Concourse.render.pipeline [ mainBranchJob, prJob ]
