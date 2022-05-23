@@ -17,7 +17,6 @@ jsonPathElement :: Parser JSONPathElement
 jsonPathElement = do
     (keyChildDot <?> "keyChildDot")
     <|> (keyChildBracket <?> "keyChildBracket")
-    <|> (keyChildren <?> "keyChildren")
     <|> (anyChild <?> "anyChild")
     <|> (slice <?> "slice")
     <|> (sliceUnion <?> "sliceUnion")
@@ -28,6 +27,7 @@ jsonPathElement = do
 slice :: Parser JSONPathElement
 slice = Slice <$> ignoreSurroundingSqBr sliceWithoutBrackets
 
+sliceWithoutBrackets :: Parser SliceElement
 sliceWithoutBrackets = (sliceWithStep <?> "sliceWithStep")
                        <|> (simpleSlice <?> "simpleSlice")
                        <|> (sliceFromWithStep <?> "sliceFromWithStep")
@@ -41,26 +41,19 @@ singleIndex :: Parser SliceElement
 singleIndex = SingleIndex <$> signed decimal
 
 keyChildBracket :: Parser JSONPathElement
-keyChildBracket = KeyChild
-                  <$> (string "['" *> takeWhile1 (inClass "a-zA-Z0-9_-") <* string "']")
+keyChildBracket =
+  ignoreSurroundingSqBr $
+  ignoreSurroundingSpace $
+  fmap KeyChild $
+  char '\'' *> takeWhile1 (/= '\'') <* char '\''
 
 keyChildDot :: Parser JSONPathElement
 keyChildDot = KeyChild
               <$> (char '.' *> takeWhile1 (inClass "a-zA-Z0-9_-"))
 
-keyChildren :: Parser JSONPathElement
-keyChildren = do
-  _ <- string "['"
-  firstKey <- takeWhile1 (inClass "a-zA-Z0-9_-")
-  restKeys <- many' $ char '.' *> takeWhile1 (inClass "a-zA-Z0-9_-")
-  _ <- string "']"
-  return $ KeyChildren (firstKey:restKeys)
 
 anyChild :: Parser JSONPathElement
 anyChild = AnyChild <$ (string ".*" <|> string "[*]")
-
--- peekAssertClosingSqBr :: Parser ()
--- peekAssertClosingSqBr 
 
 simpleSlice :: Parser SliceElement
 simpleSlice = do
@@ -152,12 +145,14 @@ condition :: Parser Condition
 condition = ignoreSurroundingSpace
             $ string "==" $> Equal
             <|> string "!=" $> NotEqual
+            <|> string "<=" $> SmallerThanOrEqual
+            <|> string ">=" $> GreaterThanOrEqual
             <|> string ">" $> GreaterThan
             <|> string "<" $> SmallerThan
 
 literal :: Parser Literal
 literal = do
-  (LitNumber <$> signed decimal)
+  (LitNumber <$> double)
   <|> LitString <$> (char '"' *> A.takeWhile (/= '"') <* char '"')
 
 ignoreSurroundingSpace :: Parser a -> Parser a

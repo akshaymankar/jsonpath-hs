@@ -19,9 +19,11 @@ data Condition = Equal
                | NotEqual
                | GreaterThan
                | SmallerThan
+               | GreaterThanOrEqual
+               | SmallerThanOrEqual
   deriving (Show, Eq)
 
-data Literal = LitNumber Int
+data Literal = LitNumber Double
              | LitString Text
   deriving (Show, Eq)
 
@@ -36,7 +38,6 @@ data SliceElement = SingleIndex Int
   deriving (Show, Eq)
 
 data JSONPathElement  = KeyChild Text
-                      | KeyChildren [Text]
                       | AnyChild
                       | Slice SliceElement
                       | SliceUnion SliceElement SliceElement
