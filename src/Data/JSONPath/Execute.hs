@@ -75,11 +75,11 @@ executeCondition (String s1) Equal (LitString s2) = s1 == s2
 executeCondition _ Equal _ = False
 executeCondition val GreaterThan lit =
   not (executeCondition val SmallerThan lit) &&  not (executeCondition val Equal lit)
-executeCondition val GreaterEqualThan lit = not (executeCondition val SmallerThan lit)
+executeCondition val GreaterThanOrEqual lit = not (executeCondition val SmallerThan lit)
 executeCondition (Number n1) SmallerThan (LitNumber n2) = n1 < realToFrac n2
 executeCondition (String s1) SmallerThan (LitString s2) = s1 < s2
-executeCondition val SmallerEqualThan lit = not (executeCondition val GreaterThan lit)
-executeCondition _ _ _ = False
+executeCondition _ SmallerThan _ = False
+executeCondition val SmallerThanOrEqual lit = not (executeCondition val GreaterThan lit)
 
 executeSliceElement :: SliceElement -> V.Vector Value -> ExecutionResult Value
 executeSliceElement (SingleIndex i) v                = if i < 0

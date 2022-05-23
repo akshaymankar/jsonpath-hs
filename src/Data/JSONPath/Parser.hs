@@ -148,8 +148,8 @@ condition :: Parser Condition
 condition = ignoreSurroundingSpace
             $ string "==" $> Equal
             <|> string "!=" $> NotEqual
-            <|> string "<=" $> SmallerEqualThan
-            <|> string ">=" $> GreaterEqualThan
+            <|> string "<=" $> SmallerThanOrEqual
+            <|> string ">=" $> GreaterThanOrEqual
             <|> string ">" $> GreaterThan
             <|> string "<" $> SmallerThan
 

@@ -19,8 +19,8 @@ data Condition = Equal
                | NotEqual
                | GreaterThan
                | SmallerThan
-               | GreaterEqualThan
-               | SmallerEqualThan
+               | GreaterThanOrEqual
+               | SmallerThanOrEqual
   deriving (Show, Eq)
 
 data Literal = LitNumber Double
