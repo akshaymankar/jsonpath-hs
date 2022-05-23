@@ -22,11 +22,9 @@
         };
       in rec {
         packages = rec {
-          dev-env = pkgs.buildEnv {
-            name = "jsonpath-hs-dev";
-            paths = [
-              # Tools
-              pkgs.haskell.compiler.ghc902
+          dev-env = ghc902Pkgs.shellFor {
+            packages = p: [p.jsonpath];
+            buildInputs = [
               pkgs.haskellPackages.cabal-install
               (pkgs.haskell-language-server.override {supportedGhcVersions = ["902"];})
               pkgs.haskellPackages.implicit-hie
