@@ -1,97 +1,81 @@
 {
-        "title" : "Filter Expression Subscript Operator",
-        "data" : [4,
-                "string",
-                false,
-                [1, 2, 3], {
-                        "index" : 1,
-                        "name" : "John Doe",
-                        "occupation" : "Architect"
-                }, 
-                {
-                        "index" : 2,
-                        "name" : "Jane Smith",
-                        "occupation" : "Architect",
-                        "color" : "blue"
-                } ,
-                {
-                        "index" : 3,
-                        "name" : "John Smith",
-                        "occupation" : "Plumber"
-                },
-                {
-                        "index" : 4,
-                        "name" : "Jane Doe",
-                        "occupation" : "Pilot"
-                },
-                { "val": 1 }, { "val": 2 }, { "val": 4 }, { "val": 3 },
-                { "textval": "a" }, { "textval": "b" }, { "textval": "d" }, { "textval": "c" }
-        ],
-        "tests" : [{
-                        "path" : "$[?(@.occupation == \"Architect\")]",
-                        "result" : [{
-                                        "index" : 1,
-                                        "name" : "John Doe",
-                                        "occupation" : "Architect"
-                                }, {
-                                        "index" : 2,
-                                        "name" : "Jane Smith",
-                                        "occupation" : "Architect",
-                                        "color" : "blue"
-                                }
-                        ]
-                   },
-                   {
-                        "path" : "$[?(@.occupation != \"Architect\")]",
-                        "result" : [{
-                                        "index" : 3,
-                                        "name" : "John Smith",
-                                        "occupation" : "Plumber"
-                                 },
-                                 {
-                                        "index" : 4,
-                                        "name" : "Jane Doe",
-                                        "occupation" : "Pilot"
-                                }
-                        ]
-                   },
-                   {
-                       "path" : "$[?(@.val > 3)]",
-                       "result" : [{ "val" : 4 }]
-                   },
-                   {
-                       "path" : "$[?(@.val >= 3)]",
-                       "result" : [{ "val" : 4 }, { "val" : 3 }]
-                   },
-                   {
-                       "path" : "$[?(@.val < 3)]",
-                       "result" : [{ "val" : 1 }, { "val" : 2 }]
-                   },
-                   {
-                       "path" : "$[?(@.val <= 3)]",
-                       "result" : [{ "val" : 1 }, { "val" : 2 }, { "val" : 3 }]
-                   },
-                   {
-                       "path" : "$[?(@.textval > \"c\")]",
-                       "result" : [{ "textval" : "d" }]
-                   },
-                   {
-                       "path" : "$[?(@.textval >= \"c\")]",
-                       "result" : [{ "textval" : "d" }, { "textval" : "c" }]
-                   },
-                   {
-                       "path" : "$[?(@.textval < \"b\")]",
-                       "result" : [{ "textval" : "a" }]
-                   },
-                   {
-                       "path" : "$[?(@.textval <= \"b\")]",
-                       "result" : [{ "textval" : "a" }, { "textval" : "b" }]
-                   },
-                   {
-                       "path" : "$[?(@.val == \"1\")]",
-                       "result" : []
-                   }
+    "title" : "Filter Expression Subscript Operator",
+    "data" : [4,
+        "string",
+        false,
+        [1, 2, 3], {
+            "index" : 1,
+            "name" : "John Doe",
+            "occupation" : "Architect"
+        }, {
+            "index" : 2,
+            "name" : "Jane Smith",
+            "occupation" : "Architect",
+            "color" : "blue"
+        } , {
+            "index" : 3,
+            "name" : "John Smith",
+            "occupation" : "Plumber"
+        }, {
+            "index" : 4,
+            "name" : "Jane Doe",
+            "occupation" : "Pilot"
+        },
+        { "val": 1 }, { "val": 2 }, { "val": 4 }, { "val": 3 },
+        { "textval": "a" }, { "textval": "b" }, { "textval": "d" }, { "textval": "c" }
+    ],
+    "tests" : [{
+            "path" : "$[?(@.occupation == \"Architect\")]",
+            "result" : [{
+                "index" : 1,
+                "name" : "John Doe",
+                "occupation" : "Architect"
+            }, {
+                "index" : 2,
+                "name" : "Jane Smith",
+                "occupation" : "Architect",
+                "color" : "blue"
+            }]
+           }, {
+               "path" : "$[?(@.occupation != \"Architect\")]",
+               "result" : [{
+                   "index" : 3,
+                   "name" : "John Smith",
+                   "occupation" : "Plumber"
+               }, {
+                   "index" : 4,
+                   "name" : "Jane Doe",
+                   "occupation" : "Pilot"
+               }]
+           }, {
+               "path" : "$[?(@.val > 3)]",
+               "result" : [{ "val" : 4 }]
+           }, {
+               "path" : "$[?(@.val >= 3)]",
+               "result" : [{ "val" : 4 }, { "val" : 3 }]
+           }, {
+               "path" : "$[?(@.val < 3)]",
+               "result" : [{ "val" : 1 }, { "val" : 2 }]
+           }, {
+               "path" : "$[?(@.val <= 3)]",
+               "result" : [{ "val" : 1 }, { "val" : 2 }, { "val" : 3 }]
+           }, {
+               "path" : "$[?(@.textval > \"c\")]",
+               "result" : [{ "textval" : "d" }]
+           }, {
+               "path" : "$[?(@.textval >= \"c\")]",
+               "result" : [{ "textval" : "d" }, { "textval" : "c" }]
+           }, {
+               "path" : "$[?(@.textval < \"b\")]",
+               "result" : [{ "textval" : "a" }]
+           }, {
+               "path" : "$[?(@.textval <= \"b\")]",
+               "result" : [{ "textval" : "a" }, { "textval" : "b" }]
+           }, {
+               "path" : "$[?(@.val == \"1\")]",
+               "result" : []
+           }
 
-        ]
+    ]
 
 }
