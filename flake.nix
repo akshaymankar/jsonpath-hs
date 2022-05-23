@@ -8,30 +8,17 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        aeson2Overrides = hself: hsuper: rec {
-          aeson = hsuper.aeson_2_0_2_0;
-          OneTuple = hsuper.OneTuple_0_3_1;
-          hashable = hsuper.hashable_1_4_0_0;
-          quickcheck-instances = hsuper.quickcheck-instances_0_3_26_1;
-          text-short = pkgs.haskell.lib.dontCheck hsuper.text-short_0_1_4;
-          time-compat = hsuper.time-compat_1_9_6_1;
-          semialign = hsuper.semialign_1_2_0_1;
+        ghcOverrides = hself: hsuper: rec {
           jsonpath = hsuper.callPackage ./default.nix {};
         };
-        ghc901Overrides = hself: hsuper: rec {
-          ghc-bignum-orphans = pkgs.haskell.lib.markUnbroken hsuper.ghc-bignum-orphans;
-          hashable = pkgs.haskell.lib.overrideCabal hsuper.hashable_1_4_0_0 (args: args // {
-            libraryHaskellDepends = args.libraryHaskellDepends ++ [ ghc-bignum-orphans ];
-          });
-        };
-        ghc901Pkgs = pkgs.haskell.packages.ghc901.override {
-          overrides = hself: hsuper: (aeson2Overrides hself hsuper // ghc901Overrides hself hsuper);
+        ghc902Pkgs = pkgs.haskell.packages.ghc902.override {
+          overrides = ghcOverrides;
         };
         ghc8107Pkgs = pkgs.haskell.packages.ghc8107.override {
-          overrides = aeson2Overrides;
+          overrides = ghcOverrides;
         };
         ghc884Pkgs = pkgs.haskell.packages.ghc884.override {
-          overrides = aeson2Overrides;
+          overrides = ghcOverrides;
         };
       in rec {
         packages = rec {
@@ -39,9 +26,9 @@
             name = "jsonpath-hs-dev";
             paths = [
               # Tools
-              pkgs.haskell.compiler.ghc901
+              pkgs.haskell.compiler.ghc902
               pkgs.haskellPackages.cabal-install
-              (pkgs.haskell-language-server.override {supportedGhcVersions = ["901"];})
+              (pkgs.haskell-language-server.override {supportedGhcVersions = ["902"];})
               pkgs.haskellPackages.implicit-hie
               pkgs.cabal2nix
 
@@ -56,7 +43,7 @@
               pkgs.fly
             ];
           };
-          jsonpath-ghc901 = ghc901Pkgs.jsonpath;
+          jsonpath-ghc902 = ghc902Pkgs.jsonpath;
           jsonpath-ghc8107 = ghc8107Pkgs.jsonpath;
           jsonpath-ghc884 = ghc884Pkgs.jsonpath;
         };
