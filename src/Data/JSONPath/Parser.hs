@@ -55,9 +55,6 @@ keyChildDot = KeyChild
 anyChild :: Parser JSONPathElement
 anyChild = AnyChild <$ (string ".*" <|> string "[*]")
 
--- peekAssertClosingSqBr :: Parser ()
--- peekAssertClosingSqBr
-
 simpleSlice :: Parser SliceElement
 simpleSlice = do
   start <- signed decimal
