@@ -40,19 +40,23 @@ let pr =
 
 let runTestsWith = ./run-tests-with.dhall
 
+let ghcs = [ "ghc922", "ghc902", "ghc8107", "ghc884" ]
+
 let mainBranchJob =
       Concourse.schemas.Job::{
       , name = "main"
       , plan =
-        [ Concourse.helpers.getStep
-            Concourse.schemas.GetStep::{
-            , resource = mainBranch
-            , trigger = Some True
-            }
-        , runTestsWith mainBranch "ghc902"
-        , runTestsWith mainBranch "ghc8107"
-        , runTestsWith mainBranch "ghc884"
-        ]
+            [ Concourse.helpers.getStep
+                Concourse.schemas.GetStep::{
+                , resource = mainBranch
+                , trigger = Some True
+                }
+            ]
+          # Prelude.List.map
+              Text
+              Concourse.Types.Step
+              (runTestsWith mainBranch)
+              ghcs
       }
 
 let markCheckPending =
@@ -130,13 +134,14 @@ let prJob =
       Concourse.schemas.Job::{
       , name = "pull-requests"
       , plan =
-        [ Concourse.helpers.getStep
-            Concourse.schemas.GetStep::{ resource = pr, trigger = Some True }
-        , markCheckPending [ "ghc902", "ghc8107", "ghc884" ]
-        , runPRTestsWithHooks "ghc902"
-        , runPRTestsWithHooks "ghc8107"
-        , runPRTestsWithHooks "ghc884"
-        ]
+            [ Concourse.helpers.getStep
+                Concourse.schemas.GetStep::{
+                , resource = pr
+                , trigger = Some True
+                }
+            , markCheckPending ghcs
+            ]
+          # Prelude.List.map Text Concourse.Types.Step runPRTestsWithHooks ghcs
       }
 
 in  Concourse.render.pipeline [ mainBranchJob, prJob ]

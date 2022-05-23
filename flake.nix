@@ -11,6 +11,9 @@
         ghcOverrides = hself: hsuper: rec {
           jsonpath = hsuper.callPackage ./default.nix {};
         };
+        ghc922Pkgs = pkgs.haskell.packages.ghc922.override {
+          overrides = ghcOverrides;
+        };
         ghc902Pkgs = pkgs.haskell.packages.ghc902.override {
           overrides = ghcOverrides;
         };
@@ -41,6 +44,7 @@
               pkgs.fly
             ];
           };
+          jsonpath-ghc922 = ghc922Pkgs.jsonpath;
           jsonpath-ghc902 = ghc902Pkgs.jsonpath;
           jsonpath-ghc8107 = ghc8107Pkgs.jsonpath;
           jsonpath-ghc884 = ghc884Pkgs.jsonpath;
