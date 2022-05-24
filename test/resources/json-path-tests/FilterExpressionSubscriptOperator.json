@@ -48,6 +48,20 @@
                    "occupation" : "Pilot"
                }]
            }, {
+               "path" : "$[?(@.name == \"John Smith\")]",
+               "result" : [{
+                   "index" : 3,
+                   "name" : "John Smith",
+                   "occupation" : "Plumber"
+               }]
+           }, {
+               "path" : "$[?(@.name == 'John Smith')]",
+               "result" : [{
+                   "index" : 3,
+                   "name" : "John Smith",
+                   "occupation" : "Plumber"
+               }]
+           }, {
                "path" : "$[?(@.val > 3)]",
                "result" : [{ "val" : 4 }]
            }, {
@@ -70,6 +84,9 @@
                "result" : [{ "textval" : "a" }]
            }, {
                "path" : "$[?(@.textval <= \"b\")]",
+               "result" : [{ "textval" : "a" }, { "textval" : "b" }]
+           }, {
+               "path" : "$[?(@.textval <= 'b')]",
                "result" : [{ "textval" : "a" }, { "textval" : "b" }]
            }, {
                "path" : "$[?(@.val == \"1\")]",
