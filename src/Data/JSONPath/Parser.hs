@@ -7,6 +7,7 @@ import Control.Applicative  ((<|>))
 import Data.Attoparsec.Text as A
 import Data.Functor
 import Data.JSONPath.Types
+import Data.Text (Text)
 
 jsonPath :: Parser [JSONPathElement]
 jsonPath = do
@@ -44,13 +45,11 @@ keyChildBracket :: Parser JSONPathElement
 keyChildBracket =
   ignoreSurroundingSqBr $
   ignoreSurroundingSpace $
-  fmap KeyChild $
-  char '\'' *> takeWhile1 (/= '\'') <* char '\''
+  KeyChild <$> quotedString
 
 keyChildDot :: Parser JSONPathElement
 keyChildDot = KeyChild
               <$> (char '.' *> takeWhile1 (inClass "a-zA-Z0-9_-"))
-
 
 anyChild :: Parser JSONPathElement
 anyChild = AnyChild <$ (string ".*" <|> string "[*]")
@@ -152,11 +151,17 @@ condition = ignoreSurroundingSpace
 
 literal :: Parser Literal
 literal = do
-  (LitNumber <$> double)
-  <|> LitString <$> (char '"' *> A.takeWhile (/= '"') <* char '"')
+  LitNumber <$> double <|> LitString <$> quotedString
 
 ignoreSurroundingSpace :: Parser a -> Parser a
 ignoreSurroundingSpace p = many' space *> p <* many' space
 
 ignoreSurroundingSqBr :: Parser a -> Parser a
 ignoreSurroundingSqBr p = char '[' *> p <* char ']'
+
+quotedString :: Parser Text
+quotedString = inQuotes '"' <|> inQuotes '\''
+  where
+    inQuotes quoteChar =
+      char quoteChar *> A.takeWhile (/= quoteChar) <* char quoteChar
+
