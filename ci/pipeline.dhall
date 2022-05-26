@@ -46,17 +46,24 @@ let mainBranchJob =
       Concourse.schemas.Job::{
       , name = "main"
       , plan =
-            [ Concourse.helpers.getStep
-                Concourse.schemas.GetStep::{
-                , resource = mainBranch
-                , trigger = Some True
+        [ Concourse.helpers.getStep
+            Concourse.schemas.GetStep::{
+            , resource = mainBranch
+            , trigger = Some True
+            }
+        , Concourse.helpers.inParallelStep
+            ( (Concourse.Types.InParallelStep Concourse.Types.Step).Config
+                { steps =
+                    Prelude.List.map
+                      Text
+                      Concourse.Types.Step
+                      (runTestsWith mainBranch)
+                      ghcs
+                , limit = Some 1
+                , fail_fast = Some False
                 }
-            ]
-          # Prelude.List.map
-              Text
-              Concourse.Types.Step
-              (runTestsWith mainBranch)
-              ghcs
+            )
+        ]
       }
 
 let markCheckPending =
@@ -134,14 +141,22 @@ let prJob =
       Concourse.schemas.Job::{
       , name = "pull-requests"
       , plan =
-            [ Concourse.helpers.getStep
-                Concourse.schemas.GetStep::{
-                , resource = pr
-                , trigger = Some True
+        [ Concourse.helpers.getStep
+            Concourse.schemas.GetStep::{ resource = pr, trigger = Some True }
+        , markCheckPending ghcs
+        , Concourse.helpers.inParallelStep
+            ( (Concourse.Types.InParallelStep Concourse.Types.Step).Config
+                { steps =
+                    Prelude.List.map
+                      Text
+                      Concourse.Types.Step
+                      runPRTestsWithHooks
+                      ghcs
+                , limit = Some 1
+                , fail_fast = Some False
                 }
-            , markCheckPending ghcs
-            ]
-          # Prelude.List.map Text Concourse.Types.Step runPRTestsWithHooks ghcs
+            )
+        ]
       }
 
 in  Concourse.render.pipeline [ mainBranchJob, prJob ]
