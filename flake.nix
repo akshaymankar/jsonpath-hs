@@ -32,6 +32,7 @@
               (pkgs.haskell-language-server.override {supportedGhcVersions = ["902"];})
               pkgs.haskellPackages.implicit-hie
               pkgs.cabal2nix
+              ghc922Pkgs.ormolu_0_5_0_0
 
               # For cabal
               pkgs.pkgconfig
@@ -48,6 +49,7 @@
           jsonpath-ghc902 = ghc902Pkgs.jsonpath;
           jsonpath-ghc8107 = ghc8107Pkgs.jsonpath;
           jsonpath-ghc884 = ghc884Pkgs.jsonpath;
+          ormolu = ghc922Pkgs.ormolu_0_5_0_0;
         };
         defaultPackage = packages.dev-env;
     });
