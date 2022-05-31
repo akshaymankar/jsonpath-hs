@@ -8,8 +8,28 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        # Avoids unnecessary recompiles
+        filteredSource = pkgs.lib.cleanSourceWith {
+          src = ./.;
+          filter = path: type:
+            let baseName = baseNameOf (toString path);
+            in pkgs.lib.cleanSourceFilter path type && !(
+              baseName == "flake.nix" ||
+              baseName == "flake.lock" ||
+              baseName == "dist-newstyle" ||
+              builtins.match "^cabal\.project\..*$" baseName != null ||
+              baseName == "hls.sh" ||
+              baseName == ".envrc" ||
+              baseName == "hie.yaml" ||
+              baseName == ".hlint.yaml" ||
+              baseName == ".hspec" ||
+              baseName == "ci"
+            );
+        };
         ghcOverrides = hself: hsuper: rec {
-          jsonpath = hsuper.callPackage ./default.nix {};
+          jsonpath =  pkgs.haskell.lib.overrideSrc (hsuper.callPackage ./default.nix {}) {
+            src = filteredSource;
+          };
         };
         ghc922Pkgs = pkgs.haskell.packages.ghc922.override {
           overrides = ghcOverrides;
