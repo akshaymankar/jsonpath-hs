@@ -5,3 +5,4 @@ TAGS
 .dir-locals.el
 .direnv
 cabal.project.local
+result

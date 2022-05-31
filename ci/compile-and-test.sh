@@ -5,7 +5,7 @@ set -eu
 readonly repo=${1:?"Please provide path to repository"}
 readonly ghc=${2:?"Please provide name of the ghc"}
 
-nix-env -iA nixpkgs.nixFlakes nixpkgs.git nixpkgs.cachix
+nix-env -iA nixpkgs.cachix
 echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
 
 cachix use jsonpath-hs
