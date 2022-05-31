@@ -40,6 +40,8 @@ let pr =
 
 let runTestsWith = ./run-tests-with.dhall
 
+let runOrmolu = ./run-ormolu.dhall
+
 let ghcs = [ "ghc922", "ghc902", "ghc8107", "ghc884" ]
 
 let mainBranchJob =
@@ -54,11 +56,12 @@ let mainBranchJob =
         , Concourse.helpers.inParallelStep
             ( (Concourse.Types.InParallelStep Concourse.Types.Step).Config
                 { steps =
-                    Prelude.List.map
-                      Text
-                      Concourse.Types.Step
-                      (runTestsWith mainBranch)
-                      ghcs
+                      [ runOrmolu mainBranch ]
+                    # Prelude.List.map
+                        Text
+                        Concourse.Types.Step
+                        (runTestsWith mainBranch)
+                        ghcs
                 , limit = Some 1
                 , fail_fast = Some False
                 }
@@ -127,15 +130,14 @@ let markCheckFailure =
           }
 
 let runPRTestsWithHooks =
-      λ(ghc : Text) →
-        let testStep = runTestsWith pr ghc
-
-        in  Concourse.helpers.addHooks
-              testStep
-              Concourse.schemas.StepHooks::{
-              , on_success = Some (markCheckSuccess ghc)
-              , on_failure = Some (markCheckFailure ghc)
-              }
+      λ(testStep : Concourse.Types.Step) →
+      λ(checkName : Text) →
+        Concourse.helpers.addHooks
+          testStep
+          Concourse.schemas.StepHooks::{
+          , on_success = Some (markCheckSuccess checkName)
+          , on_failure = Some (markCheckFailure checkName)
+          }
 
 let prJob =
       Concourse.schemas.Job::{
@@ -143,15 +145,18 @@ let prJob =
       , plan =
         [ Concourse.helpers.getStep
             Concourse.schemas.GetStep::{ resource = pr, trigger = Some True }
-        , markCheckPending ghcs
+        , markCheckPending ([ "ormolu" ] # ghcs)
         , Concourse.helpers.inParallelStep
             ( (Concourse.Types.InParallelStep Concourse.Types.Step).Config
                 { steps =
-                    Prelude.List.map
-                      Text
-                      Concourse.Types.Step
-                      runPRTestsWithHooks
-                      ghcs
+                      [ runPRTestsWithHooks (runOrmolu pr) "ormolu" ]
+                    # Prelude.List.map
+                        Text
+                        Concourse.Types.Step
+                        ( λ(ghc : Text) →
+                            runPRTestsWithHooks (runTestsWith pr ghc) ghc
+                        )
+                        ghcs
                 , limit = Some 1
                 , fail_fast = Some False
                 }
