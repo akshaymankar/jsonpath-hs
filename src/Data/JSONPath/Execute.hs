@@ -1,27 +1,26 @@
 {-# LANGUAGE CPP #-}
-module Data.JSONPath.Execute
-  (executeJSONPath, executeJSONPathEither, executeJSONPathElement)
-where
+
+module Data.JSONPath.Execute (executeJSONPath, executeJSONPathEither, executeJSONPathElement) where
 
 import Data.Aeson
-import Data.Aeson.Text
-import Data.Function       ((&))
-import qualified Data.Aeson.KeyMap as Map
 import qualified Data.Aeson.Key as Key
+import qualified Data.Aeson.KeyMap as Map
+import Data.Aeson.Text
+import Data.Function ((&))
 import Data.JSONPath.Types
-import Data.Text           (unpack, Text)
+import Data.Text (Text, unpack)
 
 #if !MIN_VERSION_base (4,11,0)
 import Data.Semigroup ((<>))
 #endif
 
 import qualified Data.Text.Lazy as LazyText
-import qualified Data.Vector    as V
+import qualified Data.Vector as V
 
 executeJSONPath :: [JSONPathElement] -> Value -> ExecutionResult Value
 executeJSONPath [] _ = ResultError "empty json path"
-executeJSONPath (j:[]) val = executeJSONPathElement j val
-executeJSONPath (j:js) val = executeJSONPath js =<< executeJSONPathElement j val
+executeJSONPath (j : []) val = executeJSONPathElement j val
+executeJSONPath (j : js) val = executeJSONPath js =<< executeJSONPathElement j val
 
 executeJSONPathEither :: [JSONPathElement] -> Value -> Either String [Value]
 executeJSONPathEither js val = resultToEither $ executeJSONPath js val
@@ -29,18 +28,19 @@ executeJSONPathEither js val = resultToEither $ executeJSONPath js val
 executeJSONPathElement :: JSONPathElement -> Value -> ExecutionResult Value
 executeJSONPathElement (KeyChild key) val =
   case val of
-    Object o -> Map.lookup (Key.fromText key) o
-                & maybeToResult (notFoundErr key o)
+    Object o ->
+      Map.lookup (Key.fromText key) o
+        & maybeToResult (notFoundErr key o)
     _ -> ResultError $ expectedObjectErr val
 executeJSONPathElement AnyChild val =
   case val of
     Object o -> ResultList . map snd $ Map.toList o
-    Array a  -> ResultList $ V.toList a
-    _        -> ResultError $ expectedObjectErr val
+    Array a -> ResultList $ V.toList a
+    _ -> ResultError $ expectedObjectErr val
 executeJSONPathElement (Slice slice) val =
   case val of
     Array a -> executeSliceElement slice a
-    _       -> ResultError $ expectedArrayErr val
+    _ -> ResultError $ expectedArrayErr val
 executeJSONPathElement (SliceUnion first second) val =
   case val of
     Array a -> appendResults (executeSliceElement first a) (executeSliceElement second a)
@@ -49,19 +49,20 @@ executeJSONPathElement (Filter _ jsonPath cond lit) val =
   case val of
     Array a -> do
       let l = V.toList a
-      ResultList $ Prelude.map (executeJSONPath jsonPath) l
-        & zip l
-        & excludeSndErrors
-        & Prelude.foldr (\(x,ys) acc -> if length ys == 1 then (x, head ys):acc else acc) []
-        & Prelude.filter (\(_, exprVal) -> executeCondition exprVal cond lit)
-        & Prelude.map fst
+      ResultList $
+        Prelude.map (executeJSONPath jsonPath) l
+          & zip l
+          & excludeSndErrors
+          & Prelude.foldr (\(x, ys) acc -> if length ys == 1 then (x, head ys) : acc else acc) []
+          & Prelude.filter (\(_, exprVal) -> executeCondition exprVal cond lit)
+          & Prelude.map fst
     _ -> ResultError $ expectedArrayErr val
 executeJSONPathElement s@(Search js) val =
   let x = either (const []) id $ executeJSONPathEither js val
       y = excludeErrors $ valMap (executeJSONPathElement s) val
-  in if Prelude.null x && Prelude.null y
-     then ResultError "Search failed"
-     else ResultList $ x ++ y
+   in if Prelude.null x && Prelude.null y
+        then ResultError "Search failed"
+        else ResultList $ x ++ y
 
 valMap :: ToJSON b => (Value -> ExecutionResult b) -> Value -> [ExecutionResult b]
 valMap f (Object o) = map snd . Map.toList $ Map.map f o
@@ -74,7 +75,7 @@ executeCondition (Number n1) Equal (LitNumber n2) = n1 == realToFrac n2
 executeCondition (String s1) Equal (LitString s2) = s1 == s2
 executeCondition _ Equal _ = False
 executeCondition val GreaterThan lit =
-  not (executeCondition val SmallerThan lit) &&  not (executeCondition val Equal lit)
+  not (executeCondition val SmallerThan lit) && not (executeCondition val Equal lit)
 executeCondition val GreaterThanOrEqual lit = not (executeCondition val SmallerThan lit)
 executeCondition (Number n1) SmallerThan (LitNumber n2) = n1 < realToFrac n2
 executeCondition (String s1) SmallerThan (LitString s2) = s1 < s2
@@ -82,35 +83,44 @@ executeCondition _ SmallerThan _ = False
 executeCondition val SmallerThanOrEqual lit = not (executeCondition val GreaterThan lit)
 
 executeSliceElement :: SliceElement -> V.Vector Value -> ExecutionResult Value
-executeSliceElement (SingleIndex i) v                = if i < 0
-                                                          then maybeToResult (invalidIndexErr i v) $ (V.!?) v (V.length v + i)
-                                                          else maybeToResult (invalidIndexErr i v) $ (V.!?) v i
-executeSliceElement (SimpleSlice start end) v        = sliceEither v start end 1
+executeSliceElement (SingleIndex i) v =
+  if i < 0
+    then maybeToResult (invalidIndexErr i v) $ (V.!?) v (V.length v + i)
+    else maybeToResult (invalidIndexErr i v) $ (V.!?) v i
+executeSliceElement (SimpleSlice start end) v = sliceEither v start end 1
 executeSliceElement (SliceWithStep start end step) v = sliceEither v start end step
-executeSliceElement (SliceTo end) v                  = sliceEither v 0 end 1
-executeSliceElement (SliceToWithStep end step) v     = sliceEither v 0 end step
-executeSliceElement (SliceFrom start) v              = sliceEither v start (-1) 1
+executeSliceElement (SliceTo end) v = sliceEither v 0 end 1
+executeSliceElement (SliceToWithStep end step) v = sliceEither v 0 end step
+executeSliceElement (SliceFrom start) v = sliceEither v start (-1) 1
 executeSliceElement (SliceFromWithStep start step) v = sliceEither v start (-1) step
-executeSliceElement (SliceWithOnlyStep step) v       = sliceEither v 0 (-1) step
+executeSliceElement (SliceWithOnlyStep step) v = sliceEither v 0 (-1) step
 
-sliceEither :: ToJSON a
-    => V.Vector a -> Int -> Int -> Int -> ExecutionResult a
-sliceEither v start end step = let len = V.length v
-                                   realStart = if start < 0 then len + start else start
-                                   realEnd = if end < 0 then len + end + 1 else end
-                               in if realStart < realEnd
-                                  then appendResults (indexEither v realStart) (sliceEither v (realStart + step) realEnd step)
-                                  else ResultList []
+sliceEither ::
+  ToJSON a =>
+  V.Vector a ->
+  Int ->
+  Int ->
+  Int ->
+  ExecutionResult a
+sliceEither v start end step =
+  let len = V.length v
+      realStart = if start < 0 then len + start else start
+      realEnd = if end < 0 then len + end + 1 else end
+   in if realStart < realEnd
+        then appendResults (indexEither v realStart) (sliceEither v (realStart + step) realEnd step)
+        else ResultList []
 
 indexEither :: ToJSON a => V.Vector a -> Int -> ExecutionResult a
-indexEither v i = (V.!?) v i
-                  & maybeToResult (invalidIndexErr i v)
+indexEither v i =
+  (V.!?) v i
+    & maybeToResult (invalidIndexErr i v)
 
 excludeSndErrors :: [(c, ExecutionResult a)] -> [(c, [a])]
-excludeSndErrors xs = Prelude.foldr accumulateFn ([] :: [(c, b)]) xs where
-  accumulateFn (x, ResultList ys) acc = (x, ys):acc
-  accumulateFn (x, ResultValue y) acc = (x, [y]):acc
-  accumulateFn _ acc             = acc
+excludeSndErrors xs = Prelude.foldr accumulateFn ([] :: [(c, b)]) xs
+  where
+    accumulateFn (x, ResultList ys) acc = (x, ys) : acc
+    accumulateFn (x, ResultValue y) acc = (x, [y]) : acc
+    accumulateFn _ acc = acc
 
 encodeJSONToString :: ToJSON a => a -> String
 encodeJSONToString x = LazyText.unpack $ encodeToLazyText x

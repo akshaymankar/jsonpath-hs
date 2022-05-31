@@ -1,9 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Data.JSONPath.Parser
-  (jsonPathElement, jsonPath)
-where
 
-import Control.Applicative  ((<|>))
+module Data.JSONPath.Parser (jsonPathElement, jsonPath) where
+
+import Control.Applicative ((<|>))
 import Data.Attoparsec.Text as A
 import Data.Functor
 import Data.JSONPath.Types
@@ -15,7 +14,8 @@ jsonPath = do
   many1 jsonPathElement
 
 jsonPathElement :: Parser JSONPathElement
-jsonPathElement = do
+jsonPathElement =
+  do
     (keyChildDot <?> "keyChildDot")
     <|> (keyChildBracket <?> "keyChildBracket")
     <|> (anyChild <?> "anyChild")
@@ -29,14 +29,15 @@ slice :: Parser JSONPathElement
 slice = Slice <$> ignoreSurroundingSqBr sliceWithoutBrackets
 
 sliceWithoutBrackets :: Parser SliceElement
-sliceWithoutBrackets = (sliceWithStep <?> "sliceWithStep")
-                       <|> (simpleSlice <?> "simpleSlice")
-                       <|> (sliceFromWithStep <?> "sliceFromWithStep")
-                       <|> (sliceFrom <?> "sliceFrom")
-                       <|> (singleIndex <?> "singleIndex")
-                       <|> (sliceToWithStep <?> "sliceToWithStep")
-                       <|> (sliceTo <?> "sliceTo")
-                       <|> (sliceWithOnlyStep <?> "sliceWithOnlyStep")
+sliceWithoutBrackets =
+  (sliceWithStep <?> "sliceWithStep")
+    <|> (simpleSlice <?> "simpleSlice")
+    <|> (sliceFromWithStep <?> "sliceFromWithStep")
+    <|> (sliceFrom <?> "sliceFrom")
+    <|> (singleIndex <?> "singleIndex")
+    <|> (sliceToWithStep <?> "sliceToWithStep")
+    <|> (sliceTo <?> "sliceTo")
+    <|> (sliceWithOnlyStep <?> "sliceWithOnlyStep")
 
 singleIndex :: Parser SliceElement
 singleIndex = SingleIndex <$> signed decimal
@@ -44,12 +45,13 @@ singleIndex = SingleIndex <$> signed decimal
 keyChildBracket :: Parser JSONPathElement
 keyChildBracket =
   ignoreSurroundingSqBr $
-  ignoreSurroundingSpace $
-  KeyChild <$> quotedString
+    ignoreSurroundingSpace $
+      KeyChild <$> quotedString
 
 keyChildDot :: Parser JSONPathElement
-keyChildDot = KeyChild
-              <$> (char '.' *> takeWhile1 (inClass "a-zA-Z0-9_-"))
+keyChildDot =
+  KeyChild
+    <$> (char '.' *> takeWhile1 (inClass "a-zA-Z0-9_-"))
 
 anyChild :: Parser JSONPathElement
 anyChild = AnyChild <$ (string ".*" <|> string "[*]")
@@ -104,7 +106,7 @@ sliceWithOnlyStep = do
   return $ SliceWithOnlyStep step
 
 sliceUnion :: Parser JSONPathElement
-sliceUnion = ignoreSurroundingSqBr $  do
+sliceUnion = ignoreSurroundingSqBr $ do
   firstElement <- sliceWithoutBrackets <?> "firstElement"
   _ <- char ','
   secondElement <- sliceWithoutBrackets <?> "secondElement"
@@ -126,7 +128,7 @@ search = do
   isDot <- (== '.') <$> peekChar'
   if isDot
     then Search <$> many1 jsonPathElement
-    else  fail "not a search element"
+    else fail "not a search element"
 
 searchBeginningWithSlice :: Parser JSONPathElement
 searchBeginningWithSlice = do
@@ -134,20 +136,21 @@ searchBeginningWithSlice = do
   isBracket <- (== '[') <$> peekChar'
   if isBracket
     then Search <$> many1 jsonPathElement
-    else  fail "not a search element"
+    else fail "not a search element"
 
 beginningPoint :: Parser BeginningPoint
 beginningPoint = do
   ((char '$' $> Root) <|> (char '@' $> CurrentObject))
 
 condition :: Parser Condition
-condition = ignoreSurroundingSpace
-            $ string "==" $> Equal
-            <|> string "!=" $> NotEqual
-            <|> string "<=" $> SmallerThanOrEqual
-            <|> string ">=" $> GreaterThanOrEqual
-            <|> string ">" $> GreaterThan
-            <|> string "<" $> SmallerThan
+condition =
+  ignoreSurroundingSpace $
+    string "==" $> Equal
+      <|> string "!=" $> NotEqual
+      <|> string "<=" $> SmallerThanOrEqual
+      <|> string ">=" $> GreaterThanOrEqual
+      <|> string ">" $> GreaterThan
+      <|> string "<" $> SmallerThan
 
 literal :: Parser Literal
 literal = do
@@ -164,4 +167,3 @@ quotedString = inQuotes '"' <|> inQuotes '\''
   where
     inQuotes quoteChar =
       char quoteChar *> A.takeWhile (/= quoteChar) <* char quoteChar
-
