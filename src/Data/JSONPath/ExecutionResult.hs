@@ -30,7 +30,7 @@ concatResults (ResultList xs : rs) = case concatResults rs of
   ResultList ys -> ResultList (xs ++ ys)
   ResultValue y -> ResultList (y : xs)
   e -> e
-concatResults (ResultValue x : []) = ResultValue x
+concatResults [ResultValue x] = ResultValue x
 concatResults (ResultValue x : rs) = case concatResults rs of
   ResultList ys -> ResultList (x : ys)
   ResultValue y -> ResultList [x, y]
@@ -57,4 +57,4 @@ excludeErrors :: [ExecutionResult a] -> [a]
 excludeErrors [] = []
 excludeErrors (ResultError _ : rs) = excludeErrors rs
 excludeErrors (ResultList xs : rs) = xs ++ excludeErrors rs
-excludeErrors (ResultValue x : rs) = x : (excludeErrors rs)
+excludeErrors (ResultValue x : rs) = x : excludeErrors rs

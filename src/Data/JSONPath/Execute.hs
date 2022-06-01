@@ -14,12 +14,13 @@ import Data.Text (Text, unpack)
 import Data.Semigroup ((<>))
 #endif
 
+import Data.Either (fromRight)
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Vector as V
 
 executeJSONPath :: [JSONPathElement] -> Value -> ExecutionResult Value
 executeJSONPath [] _ = ResultError "empty json path"
-executeJSONPath (j : []) val = executeJSONPathElement j val
+executeJSONPath [j] val = executeJSONPathElement j val
 executeJSONPath (j : js) val = executeJSONPath js =<< executeJSONPathElement j val
 
 executeJSONPathEither :: [JSONPathElement] -> Value -> Either String [Value]
@@ -58,7 +59,7 @@ executeJSONPathElement (Filter _ jsonPath cond lit) val =
           & Prelude.map fst
     _ -> ResultError $ expectedArrayErr val
 executeJSONPathElement s@(Search js) val =
-  let x = either (const []) id $ executeJSONPathEither js val
+  let x = fromRight [] $ executeJSONPathEither js val
       y = excludeErrors $ valMap (executeJSONPathElement s) val
    in if Prelude.null x && Prelude.null y
         then ResultError "Search failed"
@@ -67,7 +68,7 @@ executeJSONPathElement s@(Search js) val =
 valMap :: ToJSON b => (Value -> ExecutionResult b) -> Value -> [ExecutionResult b]
 valMap f (Object o) = map snd . Map.toList $ Map.map f o
 valMap f (Array a) = V.toList $ V.map f a
-valMap _ v = pure $ ResultError $ "Expected object or array, found " <> (encodeJSONToString v)
+valMap _ v = pure $ ResultError $ "Expected object or array, found " <> encodeJSONToString v
 
 executeCondition :: Value -> Condition -> Literal -> Bool
 executeCondition val NotEqual lit = not $ executeCondition val Equal lit
@@ -116,7 +117,7 @@ indexEither v i =
     & maybeToResult (invalidIndexErr i v)
 
 excludeSndErrors :: [(c, ExecutionResult a)] -> [(c, [a])]
-excludeSndErrors xs = Prelude.foldr accumulateFn ([] :: [(c, b)]) xs
+excludeSndErrors = Prelude.foldr accumulateFn ([] :: [(c, b)])
   where
     accumulateFn (x, ResultList ys) acc = (x, ys) : acc
     accumulateFn (x, ResultValue y) acc = (x, [y]) : acc
@@ -126,13 +127,13 @@ encodeJSONToString :: ToJSON a => a -> String
 encodeJSONToString x = LazyText.unpack $ encodeToLazyText x
 
 notFoundErr :: ToJSON a => Text -> a -> String
-notFoundErr key o = "expected key " <> unpack key <> " in object " <> (encodeJSONToString o)
+notFoundErr key o = "expected key " <> unpack key <> " in object " <> encodeJSONToString o
 
 invalidIndexErr :: (ToJSON a) => Int -> a -> String
-invalidIndexErr i a = "index " <> show i <> " invalid for array " <> (encodeJSONToString a)
+invalidIndexErr i a = "index " <> show i <> " invalid for array " <> encodeJSONToString a
 
 expectedObjectErr :: ToJSON a => a -> String
-expectedObjectErr val = "expected object, found " <> (encodeJSONToString val)
+expectedObjectErr val = "expected object, found " <> encodeJSONToString val
 
 expectedArrayErr :: ToJSON a => a -> String
-expectedArrayErr val = "expected array, found " <> (encodeJSONToString val)
+expectedArrayErr val = "expected array, found " <> encodeJSONToString val

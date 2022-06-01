@@ -16,7 +16,7 @@ jsonPath = do
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement =
   do
-    (keyChildDot <?> "keyChildDot")
+    keyChildDot <?> "keyChildDot"
     <|> (keyChildBracket <?> "keyChildBracket")
     <|> (anyChild <?> "anyChild")
     <|> (slice <?> "slice")
@@ -140,7 +140,7 @@ searchBeginningWithSlice = do
 
 beginningPoint :: Parser BeginningPoint
 beginningPoint = do
-  ((char '$' $> Root) <|> (char '@' $> CurrentObject))
+  (char '$' $> Root) <|> (char '@' $> CurrentObject)
 
 condition :: Parser Condition
 condition =
