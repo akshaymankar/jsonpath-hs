@@ -105,8 +105,8 @@ sliceEither ::
   ExecutionResult a
 sliceEither v start end step =
   let len = V.length v
-      realStart = if start < 0 then len + start else start
-      realEnd = if end < 0 then len + end + 1 else end
+      realStart = max 0 (if start < 0 then len + start else start)
+      realEnd = min len (if end < 0 then len + end + 1 else end)
    in if realStart < realEnd
         then appendResults (indexEither v realStart) (sliceEither v (realStart + step) realEnd step)
         else ResultList []
