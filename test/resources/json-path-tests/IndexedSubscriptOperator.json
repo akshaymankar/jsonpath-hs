@@ -53,6 +53,12 @@
         }, {
             "path" : "$[*]",
             "result" : ["John Doe", 36, "Architect", "one", "three", "five"]
+        }, {
+            "path": "$[2:113667776004]",
+            "result": ["Architect", "one", "three", "five"]
+        }, {
+            "path": "$[-113667776004:2]",
+            "result": ["John Doe", 36]
         }
     ]
 }
