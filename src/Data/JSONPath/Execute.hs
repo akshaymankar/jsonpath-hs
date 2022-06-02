@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.JSONPath.Execute (executeJSONPath, executeJSONPathEither, executeJSONPathElement) where
 
@@ -15,6 +16,7 @@ import Data.Semigroup ((<>))
 #endif
 
 import Data.Either (fromRight)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Vector as V
 
@@ -88,33 +90,64 @@ executeSliceElement (SingleIndex i) v =
   if i < 0
     then maybeToResult (invalidIndexErr i v) $ (V.!?) v (V.length v + i)
     else maybeToResult (invalidIndexErr i v) $ (V.!?) v i
-executeSliceElement (SimpleSlice start end) v = sliceEither v start end 1
-executeSliceElement (SliceWithStep start end step) v = sliceEither v start end step
-executeSliceElement (SliceTo end) v = sliceEither v 0 end 1
-executeSliceElement (SliceToWithStep end step) v = sliceEither v 0 end step
-executeSliceElement (SliceFrom start) v = sliceEither v start (-1) 1
-executeSliceElement (SliceFromWithStep start step) v = sliceEither v start (-1) step
-executeSliceElement (SliceWithOnlyStep step) v = sliceEither v 0 (-1) step
+executeSliceElement (SimpleSlice start end) v = sliceEither v (Just start) (Just end) Nothing
+executeSliceElement (SliceWithStep start end step) v = sliceEither v (Just start) (Just end) (Just step)
+executeSliceElement (SliceTo end) v = sliceEither v Nothing (Just end) Nothing
+executeSliceElement (SliceToWithStep end step) v = sliceEither v Nothing (Just end) (Just step)
+executeSliceElement (SliceFrom start) v = sliceEither v (Just start) Nothing Nothing
+executeSliceElement (SliceFromWithStep start step) v = sliceEither v (Just start) Nothing (Just step)
+executeSliceElement (SliceWithOnlyStep step) v = sliceEither v Nothing Nothing (Just step)
 
+-- | Based on
+-- https://ietf-wg-jsonpath.github.io/draft-ietf-jsonpath-base/draft-ietf-jsonpath-base.html#name-array-slice-selector
 sliceEither ::
+  forall a.
   ToJSON a =>
   V.Vector a ->
-  Int ->
-  Int ->
-  Int ->
+  Maybe Int ->
+  Maybe Int ->
+  Maybe Int ->
   ExecutionResult a
-sliceEither v start end step =
-  let len = V.length v
-      realStart = max 0 (if start < 0 then len + start else start)
-      realEnd = min len (if end < 0 then len + end + 1 else end)
-   in if realStart < realEnd
-        then appendResults (indexEither v realStart) (sliceEither v (realStart + step) realEnd step)
-        else ResultList []
+sliceEither v mStart mEnd mStep
+  | step == 0 = ResultList []
+  | step > 0 = ResultList $ postitiveStepLoop lowerBound
+  | otherwise = ResultList $ negativeStepLoop upperBound
+  where
+    postitiveStepLoop :: Int -> [a]
+    postitiveStepLoop i
+      | i < upperBound = v V.! i : postitiveStepLoop (i + step)
+      | otherwise = []
 
-indexEither :: ToJSON a => V.Vector a -> Int -> ExecutionResult a
-indexEither v i =
-  (V.!?) v i
-    & maybeToResult (invalidIndexErr i v)
+    negativeStepLoop :: Int -> [a]
+    negativeStepLoop i
+      | i > lowerBound = v V.! i : negativeStepLoop (i + step)
+      | otherwise = []
+
+    normalizeIndex :: Int -> Int
+    normalizeIndex i =
+      if i >= 0 then i else len + i
+
+    len = V.length v
+    step = fromMaybe 1 mStep
+
+    defaultStart
+      | step >= 0 = 0
+      | otherwise = len - 1
+    start = fromMaybe defaultStart mStart
+    normalizedStart = normalizeIndex start
+
+    defaultEnd
+      | step >= 0 = len
+      | otherwise = negate len - 1
+    end = fromMaybe defaultEnd mEnd
+    normalizedEnd = normalizeIndex end
+
+    lowerBound
+      | step >= 0 = min (max normalizedStart 0) len
+      | otherwise = min (max normalizedEnd (-1)) (len - 1)
+    upperBound
+      | step >= 0 = min (max normalizedEnd 0) len
+      | otherwise = min (max normalizedStart (-1)) (len - 1)
 
 excludeSndErrors :: [(c, ExecutionResult a)] -> [(c, [a])]
 excludeSndErrors = Prelude.foldr accumulateFn ([] :: [(c, b)])
