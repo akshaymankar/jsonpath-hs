@@ -59,6 +59,34 @@
         }, {
             "path": "$[-113667776004:2]",
             "result": ["John Doe", 36]
+        }, {
+            "path": "$[::0]",
+            "result": []
+        }, {
+            "path": "$[5:0:-1]",
+            "result": [
+                "five",
+                "three",
+                "one",
+                "Architect",
+                36
+            ]
+        }, {
+            "path": "$[-1:0:-1]",
+            "result": [
+                "five",
+                "three",
+                "one",
+                "Architect",
+                36
+            ]
+        }, {
+            "path": "$[::-2]",
+            "result": [
+                "five",
+                "one",
+                36
+            ]
         }
     ]
 }
