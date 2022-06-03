@@ -85,30 +85,13 @@ executeCondition (String s1) SmallerThan (LitString s2) = s1 < s2
 executeCondition _ SmallerThan _ = False
 executeCondition val SmallerThanOrEqual lit = not (executeCondition val GreaterThan lit)
 
-executeSliceElement :: SliceElement -> V.Vector Value -> ExecutionResult Value
-executeSliceElement (SingleIndex i) v =
-  if i < 0
-    then maybeToResult (invalidIndexErr i v) $ (V.!?) v (V.length v + i)
-    else maybeToResult (invalidIndexErr i v) $ (V.!?) v i
-executeSliceElement (SimpleSlice start end) v = sliceEither v (Just start) (Just end) Nothing
-executeSliceElement (SliceWithStep start end step) v = sliceEither v (Just start) (Just end) (Just step)
-executeSliceElement (SliceTo end) v = sliceEither v Nothing (Just end) Nothing
-executeSliceElement (SliceToWithStep end step) v = sliceEither v Nothing (Just end) (Just step)
-executeSliceElement (SliceFrom start) v = sliceEither v (Just start) Nothing Nothing
-executeSliceElement (SliceFromWithStep start step) v = sliceEither v (Just start) Nothing (Just step)
-executeSliceElement (SliceWithOnlyStep step) v = sliceEither v Nothing Nothing (Just step)
-
--- | Based on
+-- | Implementation of 'MultipleIndices' execution is based on
 -- https://ietf-wg-jsonpath.github.io/draft-ietf-jsonpath-base/draft-ietf-jsonpath-base.html#name-array-slice-selector
-sliceEither ::
-  forall a.
-  ToJSON a =>
-  V.Vector a ->
-  Maybe Int ->
-  Maybe Int ->
-  Maybe Int ->
-  ExecutionResult a
-sliceEither v mStart mEnd mStep
+executeSliceElement :: forall a. ToJSON a => SliceElement -> V.Vector a -> ExecutionResult a
+executeSliceElement (SingleIndex i) v
+  | i < 0 = maybeToResult (invalidIndexErr i v) $ (V.!?) v (V.length v + i)
+  | otherwise = maybeToResult (invalidIndexErr i v) $ (V.!?) v i
+executeSliceElement (MultipleIndices mStart mEnd mStep) v
   | step == 0 = ResultList []
   | step > 0 = ResultList $ postitiveStepLoop lowerBound
   | otherwise = ResultList $ negativeStepLoop upperBound
@@ -123,12 +106,12 @@ sliceEither v mStart mEnd mStep
       | i > lowerBound = v V.! i : negativeStepLoop (i + step)
       | otherwise = []
 
+    len = V.length v
+    step = fromMaybe 1 mStep
+
     normalizeIndex :: Int -> Int
     normalizeIndex i =
       if i >= 0 then i else len + i
-
-    len = V.length v
-    step = fromMaybe 1 mStep
 
     defaultStart
       | step >= 0 = 0

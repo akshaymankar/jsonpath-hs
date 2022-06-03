@@ -32,13 +32,7 @@ data Literal
 
 data SliceElement
   = SingleIndex Int
-  | SimpleSlice Int Int
-  | SliceWithStep Int Int Int
-  | SliceTo Int
-  | SliceToWithStep Int Int
-  | SliceFrom Int
-  | SliceFromWithStep Int Int
-  | SliceWithOnlyStep Int
+  | MultipleIndices (Maybe Int) (Maybe Int) (Maybe Int)
   deriving (Show, Eq)
 
 data JSONPathElement
