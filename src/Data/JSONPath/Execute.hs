@@ -103,8 +103,8 @@ canCompare _ _ = False
 -- https://ietf-wg-jsonpath.github.io/draft-ietf-jsonpath-base/draft-ietf-jsonpath-base.html#name-array-slice-selector
 executeSliceElement :: forall a. ToJSON a => SliceElement -> V.Vector a -> ExecutionResult a
 executeSliceElement (SingleIndex i) v
-  | i < 0 = ResultList . maybeToList $ (V.!?) v (V.length v + i)
-  | otherwise = ResultList . maybeToList $ (V.!?) v i
+  | i < 0 = maybe (ResultList []) ResultValue $ (V.!?) v (V.length v + i)
+  | otherwise = maybe (ResultList []) ResultValue $ (V.!?) v i
 executeSliceElement (MultipleIndices mStart mEnd mStep) v
   | step == 0 = ResultList []
   | step > 0 = ResultList $ postitiveStepLoop lowerBound
