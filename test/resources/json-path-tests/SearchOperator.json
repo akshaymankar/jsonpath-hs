@@ -26,7 +26,7 @@
         "result" : ["blue", "green"]
     }, {
         "path" : "$..missingKey",
-        "result" : false
+        "result" : []
     }, {
         "path" : "$..[1]",
         "result" : [{

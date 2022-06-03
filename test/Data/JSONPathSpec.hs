@@ -87,7 +87,9 @@ test testData (Test path expected) =
         timeout timeLimit $ do
           -- Using '$!' here ensures that the computation is strict, so this can
           -- be timed out properly
-          pure $! parseJSONPath path >>= flip executeJSONPathEither testData
+          pure $! do
+            parsed <- parseJSONPath path
+            Right $ executeJSONPath parsed testData
 
     result <- case mResult of
       Just r -> pure r
@@ -99,6 +101,6 @@ test testData (Test path expected) =
       Array a -> case result of
         Left err -> expectationFailure $ "Unexpected Left: " <> err
         -- TODO: Define order of result and make this `shouldBe`
-        Right r -> r `shouldMatchList` V.toList a
+        Right r -> resultToList r `shouldMatchList` V.toList a
       Bool False -> result `shouldSatisfy` isLeft
       v -> expectationFailure $ "Invalid result in test data " <> LazyText.unpack (encodeToLazyText v)

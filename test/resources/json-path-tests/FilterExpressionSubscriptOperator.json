@@ -38,15 +38,20 @@
             }]
            }, {
                "path" : "$[?(@.occupation != \"Architect\")]",
-               "result" : [{
-                   "index" : 3,
-                   "name" : "John Smith",
-                   "occupation" : "Plumber"
-               }, {
-                   "index" : 4,
-                   "name" : "Jane Doe",
-                   "occupation" : "Pilot"
-               }]
+               "result" : [4,
+                           "string",
+                           false,
+                           [1, 2, 3], {
+                               "index" : 3,
+                               "name" : "John Smith",
+                               "occupation" : "Plumber"
+                           }, {
+                               "index" : 4,
+                               "name" : "Jane Doe",
+                               "occupation" : "Pilot"
+                           },
+                           { "val": 1 }, { "val": 2 }, { "val": 4 }, { "val": 3 },
+                           { "textval": "a" }, { "textval": "b" }, { "textval": "d" }, { "textval": "c" }]
            }, {
                "path" : "$[?(@.name == \"John Smith\")]",
                "result" : [{
