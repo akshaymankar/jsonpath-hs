@@ -15,7 +15,7 @@ import Data.Semigroup ((<>))
 
 import qualified Data.Aeson as A
 import Data.Bifunctor (second)
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 
 executeJSONPath :: [JSONPathElement] -> Value -> ExecutionResult Value
@@ -28,7 +28,7 @@ executeJSONPathElement (KeyChild key) val =
     Object o ->
       maybe (ResultList []) ResultValue $
         Map.lookup (Key.fromText key) o
-    _ -> ResultValue A.Null
+    _ -> ResultList []
 executeJSONPathElement AnyChild val =
   ResultList $ case val of
     Object o -> map snd $ Map.toList o
@@ -63,17 +63,12 @@ executeJSONPathElement (Filter _ jsonPath cond lit) val =
 executeJSONPathElement s@(Search js) val =
   let x = executeJSONPath js val
       y = mconcat $ valMap (executeJSONPathElement s) val
-   in dropNulls $ x <> y
+   in x <> y
 
 valMap :: ToJSON b => (Value -> ExecutionResult b) -> Value -> [ExecutionResult b]
 valMap f (Object o) = map snd . Map.toList $ Map.map f o
 valMap f (Array a) = V.toList $ V.map f a
 valMap _ _ = []
-
-dropNulls :: ExecutionResult Value -> ExecutionResult Value
-dropNulls (ResultList xs) = ResultList $ filter (/= A.Null) xs
-dropNulls (ResultValue A.Null) = ResultList []
-dropNulls (ResultValue x) = ResultList [x]
 
 executeCondition :: Value -> Condition -> Literal -> Bool
 executeCondition val NotEqual lit = not (executeCondition val Equal lit)
