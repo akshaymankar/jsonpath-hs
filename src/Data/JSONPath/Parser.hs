@@ -2,7 +2,7 @@
 
 module Data.JSONPath.Parser (jsonPathElement, jsonPath) where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (optional, (<|>))
 import Data.Attoparsec.Text as A
 import Data.Functor
 import Data.JSONPath.Types
@@ -11,7 +11,7 @@ import Data.Text (Text)
 jsonPath :: Parser [JSONPathElement]
 jsonPath = do
   _ <- skip (== '$') <|> pure ()
-  many1 jsonPathElement
+  many1 (jsonPathElement <?> "jsonPathElement")
 
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement =
@@ -30,17 +30,28 @@ slice = Slice <$> ignoreSurroundingSqBr sliceWithoutBrackets
 
 sliceWithoutBrackets :: Parser SliceElement
 sliceWithoutBrackets =
-  (sliceWithStep <?> "sliceWithStep")
-    <|> (simpleSlice <?> "simpleSlice")
-    <|> (sliceFromWithStep <?> "sliceFromWithStep")
-    <|> (sliceFrom <?> "sliceFrom")
+  (multipleIndices <?> "multipleIndices")
     <|> (singleIndex <?> "singleIndex")
-    <|> (sliceToWithStep <?> "sliceToWithStep")
-    <|> (sliceTo <?> "sliceTo")
-    <|> (sliceWithOnlyStep <?> "sliceWithOnlyStep")
 
 singleIndex :: Parser SliceElement
 singleIndex = SingleIndex <$> signed decimal
+
+multipleIndices :: Parser SliceElement
+multipleIndices = do
+  MultipleIndices
+    <$> parseStart
+    <*> parseEnd
+    <*> parseStep
+  where
+    parseStart =
+      optional (signed decimal)
+        <* char ':'
+
+    parseEnd = optional (signed decimal)
+
+    parseStep =
+      optional (char ':')
+        *> optional (signed decimal)
 
 keyChildBracket :: Parser JSONPathElement
 keyChildBracket =
@@ -55,55 +66,6 @@ keyChildDot =
 
 anyChild :: Parser JSONPathElement
 anyChild = AnyChild <$ (string ".*" <|> string "[*]")
-
-simpleSlice :: Parser SliceElement
-simpleSlice = do
-  start <- signed decimal
-  _ <- char ':'
-  end <- signed decimal
-  return $ SimpleSlice start end
-
-sliceWithStep :: Parser SliceElement
-sliceWithStep = do
-  start <- signed decimal
-  _ <- char ':'
-  end <- signed decimal
-  _ <- char ':'
-  step <- signed decimal
-  return $ SliceWithStep start end step
-
-sliceFrom :: Parser SliceElement
-sliceFrom = do
-  start <- signed decimal
-  _ <- char ':'
-  return $ SliceFrom start
-
-sliceFromWithStep :: Parser SliceElement
-sliceFromWithStep = do
-  start <- signed decimal
-  _ <- string "::"
-  step <- signed decimal
-  return $ SliceFromWithStep start step
-
-sliceTo :: Parser SliceElement
-sliceTo = do
-  _ <- char ':'
-  end <- signed decimal
-  return $ SliceTo end
-
-sliceToWithStep :: Parser SliceElement
-sliceToWithStep = do
-  _ <- char ':'
-  end <- signed decimal
-  _ <- char ':'
-  step <- signed decimal
-  return $ SliceToWithStep end step
-
-sliceWithOnlyStep :: Parser SliceElement
-sliceWithOnlyStep = do
-  _ <- string "::"
-  step <- signed decimal
-  return $ SliceWithOnlyStep step
 
 sliceUnion :: Parser JSONPathElement
 sliceUnion = ignoreSurroundingSqBr $ do

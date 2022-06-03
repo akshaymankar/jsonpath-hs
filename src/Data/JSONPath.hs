@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Data.JSONPath
   ( module Data.JSONPath.Types,
     module Data.JSONPath.Parser,

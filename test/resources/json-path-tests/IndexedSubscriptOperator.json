@@ -87,6 +87,16 @@
                 "one",
                 36
             ]
+        }, {
+            "path": "$[::]",
+            "result": [
+                "John Doe",
+                36,
+                "Architect",
+                "one",
+                "three",
+                "five"
+            ]
         }
     ]
 }
