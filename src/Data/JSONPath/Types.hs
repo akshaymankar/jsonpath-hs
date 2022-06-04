@@ -4,11 +4,9 @@ module Data.JSONPath.Types
     Literal (..),
     JSONPathElement (..),
     SliceElement (..),
-    module Data.JSONPath.ExecutionResult,
   )
 where
 
-import Data.JSONPath.ExecutionResult
 import Data.Text
 
 data BeginningPoint

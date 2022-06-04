@@ -29,7 +29,6 @@ library
   exposed-modules:
       Data.JSONPath
       Data.JSONPath.Execute
-      Data.JSONPath.ExecutionResult
       Data.JSONPath.Parser
       Data.JSONPath.Types
   other-modules:

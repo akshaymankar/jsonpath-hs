@@ -101,6 +101,6 @@ test testData (Test path expected) =
       Array a -> case result of
         Left err -> expectationFailure $ "Unexpected Left: " <> err
         -- TODO: Define order of result and make this `shouldBe`
-        Right r -> resultToList r `shouldMatchList` V.toList a
+        Right r -> r `shouldMatchList` V.toList a
       Bool False -> result `shouldSatisfy` isLeft
       v -> expectationFailure $ "Invalid result in test data " <> LazyText.unpack (encodeToLazyText v)

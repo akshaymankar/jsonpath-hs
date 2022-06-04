@@ -14,58 +14,56 @@ import Data.Semigroup ((<>))
 #endif
 
 import qualified Data.Aeson as A
-import Data.Bifunctor (second)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.Vector as V
 
-executeJSONPath :: [JSONPathElement] -> Value -> ExecutionResult Value
-executeJSONPath [] v = ResultValue v
+executeJSONPath :: [JSONPathElement] -> Value -> [Value]
+executeJSONPath [] v = [v]
 executeJSONPath (j : js) v = executeJSONPath js =<< executeJSONPathElement j v
 
-executeJSONPathElement :: JSONPathElement -> Value -> ExecutionResult Value
+executeJSONPathElement :: JSONPathElement -> Value -> [Value]
 executeJSONPathElement (KeyChild key) val =
   case val of
     Object o ->
-      maybe (ResultList []) ResultValue $
+      maybeToList $
         Map.lookup (Key.fromText key) o
-    _ -> ResultList []
+    _ -> []
 executeJSONPathElement AnyChild val =
-  ResultList $ case val of
+  case val of
     Object o -> map snd $ Map.toList o
     Array a -> V.toList a
     _ -> []
 executeJSONPathElement (Slice slice) val =
   case val of
     Array a -> executeSliceElement slice a
-    _ -> ResultList []
+    _ -> []
 executeJSONPathElement (SliceUnion firstPart secondPart) val =
   case val of
     Array a -> executeSliceElement firstPart a <> executeSliceElement secondPart a
-    _ -> ResultList []
+    _ -> []
 executeJSONPathElement (Filter _ jsonPath cond lit) val =
   case val of
     Array a -> do
       let l = V.toList a
-      ResultList $
-        map (executeJSONPath jsonPath) l
-          & zipWith (curry (second resultToList)) l
-          & map
-            ( \(x, ys) ->
-                -- Use found value, if it exists, otherwise use 'A.Null'. The
-                -- null value is helpful if the condition is 'NotEqual'
-                if length ys == 1
-                  then (x, head ys)
-                  else (x, A.Null)
-            )
-          & Prelude.filter (\(_, exprVal) -> executeCondition exprVal cond lit)
-          & Prelude.map fst
-    _ -> ResultList []
+      map (executeJSONPath jsonPath) l
+        & zipWith
+          ( \x ys ->
+              -- Use found value, if it exists, otherwise use 'A.Null'. The
+              -- null value is helpful if the condition is 'NotEqual'
+              if length ys == 1
+                then (x, head ys)
+                else (x, A.Null)
+          )
+          l
+        & Prelude.filter (\(_, exprVal) -> executeCondition exprVal cond lit)
+        & Prelude.map fst
+    _ -> []
 executeJSONPathElement s@(Search js) val =
   let x = executeJSONPath js val
       y = mconcat $ valMap (executeJSONPathElement s) val
    in x <> y
 
-valMap :: ToJSON b => (Value -> ExecutionResult b) -> Value -> [ExecutionResult b]
+valMap :: ToJSON b => (Value -> [b]) -> Value -> [[b]]
 valMap f (Object o) = map snd . Map.toList $ Map.map f o
 valMap f (Array a) = V.toList $ V.map f a
 valMap _ _ = []
@@ -96,14 +94,14 @@ canCompare _ _ = False
 
 -- | Implementation of 'MultipleIndices' execution is based on
 -- https://ietf-wg-jsonpath.github.io/draft-ietf-jsonpath-base/draft-ietf-jsonpath-base.html#name-array-slice-selector
-executeSliceElement :: forall a. ToJSON a => SliceElement -> V.Vector a -> ExecutionResult a
+executeSliceElement :: forall a. ToJSON a => SliceElement -> V.Vector a -> [a]
 executeSliceElement (SingleIndex i) v
-  | i < 0 = maybe (ResultList []) ResultValue $ (V.!?) v (V.length v + i)
-  | otherwise = maybe (ResultList []) ResultValue $ (V.!?) v i
+  | i < 0 = maybeToList $ (V.!?) v (V.length v + i)
+  | otherwise = maybeToList $ (V.!?) v i
 executeSliceElement (MultipleIndices mStart mEnd mStep) v
-  | step == 0 = ResultList []
-  | step > 0 = ResultList $ postitiveStepLoop lowerBound
-  | otherwise = ResultList $ negativeStepLoop upperBound
+  | step == 0 = []
+  | step > 0 = postitiveStepLoop lowerBound
+  | otherwise = negativeStepLoop upperBound
   where
     postitiveStepLoop :: Int -> [a]
     postitiveStepLoop i
