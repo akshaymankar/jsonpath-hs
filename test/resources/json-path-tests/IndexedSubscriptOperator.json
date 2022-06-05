@@ -16,7 +16,7 @@
             "result" : ["five"]
         }, {
             "path" : "$[10]",
-            "result" : false
+            "result" : []
         }, {
             "path" : "$[1:4]",
             "result" : [36, "Architect", "one"]

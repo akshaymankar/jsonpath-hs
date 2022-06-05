@@ -87,7 +87,9 @@ test testData (Test path expected) =
         timeout timeLimit $ do
           -- Using '$!' here ensures that the computation is strict, so this can
           -- be timed out properly
-          pure $! parseJSONPath path >>= flip executeJSONPathEither testData
+          pure $! do
+            parsed <- parseJSONPath path
+            Right $ executeJSONPath parsed testData
 
     result <- case mResult of
       Just r -> pure r

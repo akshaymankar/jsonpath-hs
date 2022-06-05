@@ -28,7 +28,7 @@
         ]
     }, {
         "path": "$.missingKey",
-        "result": false
+        "result": []
     }, {
         "path": "$.*",
         "result": [
