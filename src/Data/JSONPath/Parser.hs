@@ -18,10 +18,10 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 type Parser = A.ParsecT Void Text Identity
 
-jsonPath :: Parser [JSONPathElement]
-jsonPath = do
+jsonPath :: Parser a -> Parser [JSONPathElement]
+jsonPath endParser = do
   _ <- optional $ char '$'
-  some jsonPathElement
+  someTill jsonPathElement (hidden $ lookAhead endParser)
 
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement =
@@ -91,7 +91,7 @@ filterParser :: Parser JSONPathElement
 filterParser = do
   _ <- string "[?("
   b <- beginningPoint
-  js <- jsonPath
+  js <- jsonPath condition
   c <- condition
   l <- literal
   _ <- string ")]"
