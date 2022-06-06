@@ -37,8 +37,9 @@ library
       src
   build-depends:
       aeson >=2
-    , attoparsec >=0.13
+    , megaparsec
     , base >=4.9 && <5
+    , scientific
     , text >=1.2
     , unordered-containers >=0.2.8
     , vector >=0.12
@@ -58,12 +59,12 @@ test-suite jsonpath-test
   build-depends:
       aeson >=1.1
     , aeson-casing
-    , attoparsec >=0.13
+    , megaparsec
     , base >=4.9 && <5
     , bytestring
     , file-embed
     , hspec
-    , hspec-attoparsec
+    , hspec-megaparsec
     , jsonpath
     , text >=1.2
     , unordered-containers >=0.2.8

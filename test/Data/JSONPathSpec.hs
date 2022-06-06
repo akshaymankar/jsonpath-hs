@@ -5,23 +5,24 @@
 
 module Data.JSONPathSpec where
 
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import Data.Aeson.Casing
 import Data.Aeson.TH
 import Data.Aeson.Text
-import Data.Attoparsec.Text
+import Data.Bifunctor (Bifunctor (first))
+import qualified Data.ByteString.Lazy as LBS
 import Data.Either
 import Data.FileEmbed
 import Data.JSONPath
 import Data.Text (Text, unpack)
-import GHC.Generics
-import Test.Hspec
-import Test.Hspec.Attoparsec
-import Control.Monad.IO.Class (liftIO)
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Vector as V
+import GHC.Generics
 import System.Timeout
+import Test.Hspec
+import Test.Hspec.Megaparsec
+import Text.Megaparsec
 
 data Test = Test
   { path :: Text,
@@ -54,24 +55,22 @@ spec =
             mapM_ group gs
             describe "Parser" $ do
               it "should parse basic things" $ do
-                (".foo" :: Text)
-                  ~> (jsonPathElement <* endOfInput)
+                parse (jsonPathElement <* eof) "" ".foo"
                   `shouldParse` KeyChild "foo"
-                ("$.foo" :: Text)
-                  ~> (jsonPath <* endOfInput)
+                parse (jsonPath <* eof) "" "$.foo"
                   `shouldParse` [KeyChild "foo"]
 
 parseJSONPath :: Text -> Either String [JSONPathElement]
-parseJSONPath = parseOnly (jsonPath <* endOfInput)
+parseJSONPath = first errorBundlePretty . parse (jsonPath <* eof) ""
 
 group :: TestGroup -> Spec
 group TestGroup {..} = do
   describe (unpack groupTitle) $
     mapM_ (test groupData) groupTests
 
--- | 1 ms
+-- | 10 ms
 timeLimit :: Int
-timeLimit = 1000
+timeLimit = 10000
 
 test :: Value -> Test -> Spec
 test testData (Test path expected) =
@@ -93,7 +92,7 @@ test testData (Test path expected) =
 
     case expected of
       Array a -> case result of
-        Left err -> expectationFailure $ "Unexpected Left: " <> err
+        Left e -> expectationFailure $ "Unexpected Left: " <> e
         -- TODO: Define order of result and make this `shouldBe`
         Right r -> r `shouldMatchList` V.toList a
       Bool False -> result `shouldSatisfy` isLeft

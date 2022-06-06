@@ -1,17 +1,17 @@
-{ mkDerivation, aeson, aeson-casing, attoparsec, base, bytestring
-, file-embed, hspec, hspec-attoparsec, hspec-discover, lib, text
-, unordered-containers, vector
+{ mkDerivation, aeson, aeson-casing, base, bytestring, file-embed
+, hspec, hspec-discover, hspec-megaparsec, lib, megaparsec
+, scientific, text, unordered-containers, vector
 }:
 mkDerivation {
   pname = "jsonpath";
-  version = "0.2.0.0";
+  version = "0.2.1.0";
   src = ./.;
   libraryHaskellDepends = [
-    aeson attoparsec base text unordered-containers vector
+    aeson base megaparsec scientific text unordered-containers vector
   ];
   testHaskellDepends = [
-    aeson aeson-casing attoparsec base bytestring file-embed hspec
-    hspec-attoparsec text unordered-containers vector
+    aeson aeson-casing base bytestring file-embed hspec
+    hspec-megaparsec megaparsec text unordered-containers vector
   ];
   testToolDepends = [ hspec-discover ];
   homepage = "https://github.com/akshaymankar/jsonpath-hs#readme";
