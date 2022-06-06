@@ -10,10 +10,11 @@ import Data.Functor.Identity
 import Data.JSONPath.Types
 import Data.Scientific (toRealFloat)
 import Data.Text (Text)
+import qualified Data.Text as Text
 import Data.Void (Void)
 import Text.Megaparsec as A
 import Text.Megaparsec.Char (char, space, string)
-import Text.Megaparsec.Char.Lexer hiding (space)
+import qualified Text.Megaparsec.Char.Lexer as L
 
 type Parser = A.ParsecT Void Text Identity
 
@@ -43,7 +44,7 @@ sliceWithoutBrackets =
     <|> singleIndex
 
 singleIndex :: Parser SliceElement
-singleIndex = SingleIndex <$> signed space decimal
+singleIndex = SingleIndex <$> L.signed space L.decimal
 
 multipleIndices :: Parser SliceElement
 multipleIndices = do
@@ -54,14 +55,14 @@ multipleIndices = do
   where
     parseStart :: Parser (Maybe Int)
     parseStart =
-      optional (signed space decimal)
+      optional (L.signed space L.decimal)
         <* char ':'
 
-    parseEnd = optional (signed space decimal)
+    parseEnd = optional (L.signed space L.decimal)
 
     parseStep =
       optional (char ':')
-        *> optional (signed space decimal)
+        *> optional (L.signed space L.decimal)
 
 keyChildBracket :: Parser JSONPathElement
 keyChildBracket =
@@ -127,7 +128,7 @@ literal = do
   LitNumber <$> double <|> LitString <$> quotedString
 
 double :: Parser Double
-double = toRealFloat <$> scientific
+double = toRealFloat <$> L.scientific
 
 ignoreSurroundingSpace :: Parser a -> Parser a
 ignoreSurroundingSpace p = space *> p <* space
@@ -136,7 +137,7 @@ ignoreSurroundingSqBr :: Parser a -> Parser a
 ignoreSurroundingSqBr p = char '[' *> p <* char ']'
 
 quotedString :: Parser Text
-quotedString = inQuotes '"' <|> inQuotes '\''
+quotedString = Text.pack <$> (inQuotes '"' <|> inQuotes '\'')
   where
     inQuotes quoteChar =
-      char quoteChar *> A.takeWhileP Nothing (/= quoteChar) <* char quoteChar
+      char quoteChar *> manyTill L.charLiteral (char quoteChar)
