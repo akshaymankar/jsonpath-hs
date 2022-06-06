@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.JSONPath.Execute (executeJSONPath, executeJSONPathElement) where
@@ -8,11 +7,6 @@ import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as Map
 import Data.Function ((&))
 import Data.JSONPath.Types
-
-#if !MIN_VERSION_base (4,11,0)
-import Data.Semigroup ((<>))
-#endif
-
 import qualified Data.Aeson as A
 import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.Vector as V
