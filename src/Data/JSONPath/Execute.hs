@@ -3,11 +3,11 @@
 module Data.JSONPath.Execute (executeJSONPath, executeJSONPathElement) where
 
 import Data.Aeson
+import qualified Data.Aeson as A
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as Map
 import Data.Function ((&))
 import Data.JSONPath.Types
-import qualified Data.Aeson as A
 import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.Vector as V
 

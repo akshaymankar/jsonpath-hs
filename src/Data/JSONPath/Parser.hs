@@ -1,40 +1,49 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Data.JSONPath.Parser (jsonPathElement, jsonPath) where
 
-import Control.Applicative (optional, (<|>))
-import Data.Attoparsec.Text as A
+import qualified Data.Char as Char
 import Data.Functor
+import Data.Functor.Identity
 import Data.JSONPath.Types
+import Data.Scientific (toRealFloat)
 import Data.Text (Text)
+import Data.Void (Void)
+import Text.Megaparsec as A
+import Text.Megaparsec.Char (char, space, string)
+import Text.Megaparsec.Char.Lexer hiding (space)
+
+type Parser = A.ParsecT Void Text Identity
 
 jsonPath :: Parser [JSONPathElement]
 jsonPath = do
-  _ <- skip (== '$') <|> pure ()
-  many1 (jsonPathElement <?> "jsonPathElement")
+  _ <- optional $ char '$'
+  some jsonPathElement
 
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement =
   do
-    keyChildDot <?> "keyChildDot"
-    <|> (keyChildBracket <?> "keyChildBracket")
-    <|> (anyChild <?> "anyChild")
-    <|> (slice <?> "slice")
-    <|> (sliceUnion <?> "sliceUnion")
-    <|> (filterParser <?> "filterParser")
-    <|> (search <?> "search")
-    <|> (searchBeginningWithSlice <?> "searchBeginningWithSlice")
+    try anyChild
+    <|> try keyChildDot
+    <|> try keyChildBracket
+    <|> try slice
+    <|> try sliceUnion
+    <|> try filterParser
+    <|> try search
+    <|> searchBeginningWithSlice
 
 slice :: Parser JSONPathElement
 slice = Slice <$> ignoreSurroundingSqBr sliceWithoutBrackets
 
 sliceWithoutBrackets :: Parser SliceElement
 sliceWithoutBrackets =
-  (multipleIndices <?> "multipleIndices")
-    <|> (singleIndex <?> "singleIndex")
+  try multipleIndices
+    <|> singleIndex
 
 singleIndex :: Parser SliceElement
-singleIndex = SingleIndex <$> signed decimal
+singleIndex = SingleIndex <$> signed space decimal
 
 multipleIndices :: Parser SliceElement
 multipleIndices = do
@@ -43,15 +52,16 @@ multipleIndices = do
     <*> parseEnd
     <*> parseStep
   where
+    parseStart :: Parser (Maybe Int)
     parseStart =
-      optional (signed decimal)
+      optional (signed space decimal)
         <* char ':'
 
-    parseEnd = optional (signed decimal)
+    parseEnd = optional (signed space decimal)
 
     parseStep =
       optional (char ':')
-        *> optional (signed decimal)
+        *> optional (signed space decimal)
 
 keyChildBracket :: Parser JSONPathElement
 keyChildBracket =
@@ -62,43 +72,41 @@ keyChildBracket =
 keyChildDot :: Parser JSONPathElement
 keyChildDot =
   KeyChild
-    <$> (char '.' *> takeWhile1 (inClass "a-zA-Z0-9_-"))
+    <$ char '.'
+    <*> takeWhile1P Nothing (\c -> Char.isAlphaNum c || c == '-' || c == '_')
 
 anyChild :: Parser JSONPathElement
 anyChild = AnyChild <$ (string ".*" <|> string "[*]")
 
 sliceUnion :: Parser JSONPathElement
-sliceUnion = ignoreSurroundingSqBr $ do
-  firstElement <- sliceWithoutBrackets <?> "firstElement"
-  _ <- char ','
-  secondElement <- sliceWithoutBrackets <?> "secondElement"
-  return $ SliceUnion firstElement secondElement
+sliceUnion =
+  ignoreSurroundingSqBr $
+    SliceUnion
+      <$> sliceWithoutBrackets
+      <* char ','
+      <*> sliceWithoutBrackets
 
 filterParser :: Parser JSONPathElement
 filterParser = do
-  _ <- string "[?(" <?> "[?("
-  b <- beginningPoint <?> "beginning point"
-  js <- jsonPath <?> "jsonPathElements"
-  c <- condition <?> "condition"
-  l <- literal <?> "literal"
-  _ <- string ")]" <?> ")]"
+  _ <- string "[?("
+  b <- beginningPoint
+  js <- jsonPath
+  c <- condition
+  l <- literal
+  _ <- string ")]"
   return $ Filter b js c l
 
 search :: Parser JSONPathElement
 search = do
   _ <- char '.'
-  isDot <- (== '.') <$> peekChar'
-  if isDot
-    then Search <$> many1 jsonPathElement
-    else fail "not a search element"
+  _ <- lookAhead (char '.')
+  Search <$> some jsonPathElement
 
 searchBeginningWithSlice :: Parser JSONPathElement
 searchBeginningWithSlice = do
   _ <- string ".."
-  isBracket <- (== '[') <$> peekChar'
-  if isBracket
-    then Search <$> many1 jsonPathElement
-    else fail "not a search element"
+  _ <- lookAhead (char '[')
+  Search <$> some jsonPathElement
 
 beginningPoint :: Parser BeginningPoint
 beginningPoint = do
@@ -118,8 +126,11 @@ literal :: Parser Literal
 literal = do
   LitNumber <$> double <|> LitString <$> quotedString
 
+double :: Parser Double
+double = toRealFloat <$> scientific
+
 ignoreSurroundingSpace :: Parser a -> Parser a
-ignoreSurroundingSpace p = many' space *> p <* many' space
+ignoreSurroundingSpace p = space *> p <* space
 
 ignoreSurroundingSqBr :: Parser a -> Parser a
 ignoreSurroundingSqBr p = char '[' *> p <* char ']'
@@ -128,4 +139,4 @@ quotedString :: Parser Text
 quotedString = inQuotes '"' <|> inQuotes '\''
   where
     inQuotes quoteChar =
-      char quoteChar *> A.takeWhile (/= quoteChar) <* char quoteChar
+      char quoteChar *> A.takeWhileP Nothing (/= quoteChar) <* char quoteChar
