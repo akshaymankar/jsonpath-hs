@@ -57,11 +57,11 @@ spec =
               it "should parse basic things" $ do
                 parse (jsonPathElement <* eof) "" ".foo"
                   `shouldParse` KeyChild "foo"
-                parse (jsonPath <* eof) "" "$.foo"
+                parse (jsonPath eof) "" "$.foo"
                   `shouldParse` [KeyChild "foo"]
 
 parseJSONPath :: Text -> Either String [JSONPathElement]
-parseJSONPath = first errorBundlePretty . parse (jsonPath <* eof) ""
+parseJSONPath = first errorBundlePretty . parse (jsonPath eof) ""
 
 group :: TestGroup -> Spec
 group TestGroup {..} = do
