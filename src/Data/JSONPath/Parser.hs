@@ -21,7 +21,7 @@ type Parser = A.ParsecT Void Text Identity
 jsonPath :: Parser a -> Parser [JSONPathElement]
 jsonPath endParser = do
   _ <- optional $ char '$'
-  someTill jsonPathElement (hidden $ lookAhead endParser)
+  manyTill jsonPathElement (hidden $ lookAhead endParser)
 
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement =
