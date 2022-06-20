@@ -9,9 +9,12 @@
         "five"
     ],
     "tests" : [{
-            "path" : "$[2]",
+        "path" : "$[2]",
             "result" : ["Architect"]
-        }, {
+         }, {
+            "path" : "$[ 2 ]",
+            "result" : ["Architect"]
+        },{
             "path" : "$[-1]",
             "result" : ["five"]
         }, {
@@ -22,6 +25,9 @@
             "result" : [36, "Architect", "one"]
         }, {
             "path" : "$[1:4:2]",
+            "result" : [36, "one"]
+        }, {
+            "path" : "$[ 1 : 4 : 2 ]",
             "result" : [36, "one"]
         }, {
             "path" : "$[:4:2]",
@@ -51,6 +57,9 @@
             "path" : "$[0:2,4]",
             "result" : ["John Doe", 36, "three"]
         }, {
+            "path" : "$[ 0:2 , 4]",
+            "result" : ["John Doe", 36, "three"]
+        } , {
             "path" : "$[*]",
             "result" : ["John Doe", 36, "Architect", "one", "three", "five"]
         }, {

@@ -44,7 +44,7 @@ sliceWithoutBrackets =
     <|> singleIndex
 
 singleIndex :: Parser SliceElement
-singleIndex = SingleIndex <$> L.signed space L.decimal
+singleIndex = ignoreSurroundingSpace $ SingleIndex <$> L.signed space L.decimal
 
 multipleIndices :: Parser SliceElement
 multipleIndices = do
@@ -55,14 +55,15 @@ multipleIndices = do
   where
     parseStart :: Parser (Maybe Int)
     parseStart =
-      optional (L.signed space L.decimal)
+      ignoreSurroundingSpace (optional (L.signed space L.decimal))
         <* char ':'
 
-    parseEnd = optional (L.signed space L.decimal)
+    parseEnd =
+      ignoreSurroundingSpace $ optional $ L.signed space L.decimal
 
     parseStep =
       optional (char ':')
-        *> optional (L.signed space L.decimal)
+        *> ignoreSurroundingSpace (optional (L.signed space L.decimal))
 
 keyChildBracket :: Parser JSONPathElement
 keyChildBracket =
