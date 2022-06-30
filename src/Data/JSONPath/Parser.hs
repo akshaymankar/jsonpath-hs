@@ -30,25 +30,26 @@ jsonPathElement =
     <|> try keyChildDot
     <|> try keyChildBracket
     <|> try slice
-    <|> try sliceUnion
+    <|> try indexChild
+    <|> try union
     <|> try filterParser
     <|> try search
     <|> searchBeginningWithSlice
 
+indexChild :: Parser JSONPathElement
+indexChild = IndexChild <$> ignoreSurroundingSqBr indexChildWithoutBrackets
+
+indexChildWithoutBrackets :: Parser Int
+indexChildWithoutBrackets = ignoreSurroundingSpace $ L.signed space L.decimal
+
 slice :: Parser JSONPathElement
-slice = Slice <$> ignoreSurroundingSqBr sliceWithoutBrackets
+slice =
+  uncurry3 Slice
+    <$> ignoreSurroundingSqBr sliceWithoutBrackets
 
-sliceWithoutBrackets :: Parser SliceElement
-sliceWithoutBrackets =
-  try multipleIndices
-    <|> singleIndex
-
-singleIndex :: Parser SliceElement
-singleIndex = ignoreSurroundingSpace $ SingleIndex <$> L.signed space L.decimal
-
-multipleIndices :: Parser SliceElement
-multipleIndices = do
-  MultipleIndices
+sliceWithoutBrackets :: Parser (Maybe Int, Maybe Int, Maybe Int)
+sliceWithoutBrackets = do
+  (,,)
     <$> parseStart
     <*> parseEnd
     <*> parseStep
@@ -80,13 +81,19 @@ keyChildDot =
 anyChild :: Parser JSONPathElement
 anyChild = AnyChild <$ (string ".*" <|> string "[*]")
 
-sliceUnion :: Parser JSONPathElement
-sliceUnion =
+union :: Parser JSONPathElement
+union =
   ignoreSurroundingSqBr $
-    SliceUnion
-      <$> sliceWithoutBrackets
-      <* char ','
-      <*> sliceWithoutBrackets
+    Union <$> do
+      firstElement <- unionElement
+      restElements <- some (char ',' *> unionElement)
+      pure (firstElement : restElements)
+
+unionElement :: Parser UnionElement
+unionElement =
+  try (uncurry3 UESlice <$> sliceWithoutBrackets)
+    <|> try (UEIndexChild <$> indexChildWithoutBrackets)
+    <|> UEKeyChild <$> ignoreSurroundingSpace quotedString
 
 filterParser :: Parser JSONPathElement
 filterParser = do
@@ -142,3 +149,6 @@ quotedString = Text.pack <$> (inQuotes '"' <|> inQuotes '\'')
   where
     inQuotes quoteChar =
       char quoteChar *> manyTill L.charLiteral (char quoteChar)
+
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 f (a, b, c) = f a b c

@@ -27,14 +27,16 @@ executeJSONPathElement AnyChild val =
     Object o -> map snd $ Map.toList o
     Array a -> V.toList a
     _ -> []
-executeJSONPathElement (Slice slice) val =
+executeJSONPathElement (IndexChild i) val =
   case val of
-    Array a -> executeSliceElement slice a
+    Array a -> executeIndexChild i a
     _ -> []
-executeJSONPathElement (SliceUnion firstPart secondPart) val =
+executeJSONPathElement (Slice start end step) val =
   case val of
-    Array a -> executeSliceElement firstPart a <> executeSliceElement secondPart a
+    Array a -> executeSlice start end step a
     _ -> []
+executeJSONPathElement (Union elements) val =
+  concatMap (flip executeUnionElement val) elements
 executeJSONPathElement (Filter _ jsonPath cond lit) val =
   case val of
     Array a -> do
@@ -86,13 +88,10 @@ canCompare (Number _) (LitNumber _) = True
 canCompare (String _) (LitString _) = True
 canCompare _ _ = False
 
--- | Implementation of 'MultipleIndices' execution is based on
+-- | Implementation is based on
 -- https://ietf-wg-jsonpath.github.io/draft-ietf-jsonpath-base/draft-ietf-jsonpath-base.html#name-array-slice-selector
-executeSliceElement :: forall a. ToJSON a => SliceElement -> V.Vector a -> [a]
-executeSliceElement (SingleIndex i) v
-  | i < 0 = maybeToList $ (V.!?) v (V.length v + i)
-  | otherwise = maybeToList $ (V.!?) v i
-executeSliceElement (MultipleIndices mStart mEnd mStep) v
+executeSlice :: forall a. Maybe Int -> Maybe Int -> Maybe Int -> V.Vector a -> [a]
+executeSlice mStart mEnd mStep v
   | step == 0 = []
   | step > 0 = postitiveStepLoop lowerBound
   | otherwise = negativeStepLoop upperBound
@@ -132,3 +131,14 @@ executeSliceElement (MultipleIndices mStart mEnd mStep) v
     upperBound
       | step >= 0 = min (max normalizedEnd 0) len
       | otherwise = min (max normalizedStart (-1)) (len - 1)
+
+executeIndexChild :: Int -> V.Vector a -> [a]
+executeIndexChild i v =
+  if i < 0
+    then maybeToList $ (V.!?) v (V.length v + i)
+    else maybeToList $ (V.!?) v i
+
+executeUnionElement :: UnionElement -> Value -> [Value]
+executeUnionElement (UEIndexChild i) v = executeJSONPathElement (IndexChild i) v
+executeUnionElement (UESlice start end step) v = executeJSONPathElement (Slice start end step) v
+executeUnionElement (UEKeyChild child) v = executeJSONPathElement (KeyChild child) v

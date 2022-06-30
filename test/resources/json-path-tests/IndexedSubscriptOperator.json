@@ -6,7 +6,8 @@
         "Architect",
         "one",
         "three",
-        "five"
+        "five",
+        {"string": "str", "array": ["arr"]}
     ],
     "tests" : [{
         "path" : "$[2]",
@@ -16,7 +17,7 @@
             "result" : ["Architect"]
         },{
             "path" : "$[-1]",
-            "result" : ["five"]
+            "result" : [{"string": "str", "array": ["arr"]}]
         }, {
             "path" : "$[10]",
             "result" : []
@@ -37,10 +38,10 @@
             "result" : [36, "one", "five"]
         }, {
             "path" : "$[::2]",
-            "result" : ["John Doe", "Architect", "three"]
+            "result" : ["John Doe", "Architect", "three", {"string": "str", "array": ["arr"]}]
         }, {
             "path" : "$[1:]",
-            "result" : [36, "Architect", "one", "three", "five"]
+            "result" : [36, "Architect", "one", "three", "five", {"string": "str", "array": ["arr"]}]
         }, {
             "path" : "$[:3]",
             "result" : ["John Doe", 36, "Architect"]
@@ -59,12 +60,21 @@
         }, {
             "path" : "$[ 0:2 , 4]",
             "result" : ["John Doe", 36, "three"]
-        } , {
+        }, {
+            "path" : "$[0:2, 'foo']",
+            "result" : ["John Doe", 36]
+        }, {
+            "path" : "$[-1]['string', 'array']",
+            "result" : ["str", ["arr"]]
+        }, {
+            "path" : "$[-1][\"not-here\", \"array\", \"string\"]",
+            "result" : [["arr"], "str"]
+        }, {
             "path" : "$[*]",
-            "result" : ["John Doe", 36, "Architect", "one", "three", "five"]
+            "result" : ["John Doe", 36, "Architect", "one", "three", "five", {"string": "str", "array": ["arr"]}]
         }, {
             "path": "$[2:113667776004]",
-            "result": ["Architect", "one", "three", "five"]
+            "result": ["Architect", "one", "three", "five", {"string": "str", "array": ["arr"]}]
         }, {
             "path": "$[-113667776004:2]",
             "result": ["John Doe", 36]
@@ -87,14 +97,16 @@
                 "three",
                 "one",
                 "Architect",
-                36
+                36,
+                {"string": "str", "array": ["arr"]}
             ]
         }, {
             "path": "$[::-2]",
             "result": [
-                "five",
-                "one",
-                36
+                {"string": "str", "array": ["arr"]},
+                "three",
+                "Architect",
+                "John Doe"
             ]
         }, {
             "path": "$[::]",
@@ -104,7 +116,8 @@
                 "Architect",
                 "one",
                 "three",
-                "five"
+                "five",
+                {"string": "str", "array": ["arr"]}
             ]
         }
     ]
