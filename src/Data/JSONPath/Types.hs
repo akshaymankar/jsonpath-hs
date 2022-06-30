@@ -3,7 +3,7 @@ module Data.JSONPath.Types
     Condition (..),
     Literal (..),
     JSONPathElement (..),
-    SliceElement (..),
+    UnionElement (..),
   )
 where
 
@@ -28,16 +28,18 @@ data Literal
   | LitString Text
   deriving (Show, Eq)
 
-data SliceElement
-  = SingleIndex Int
-  | MultipleIndices (Maybe Int) (Maybe Int) (Maybe Int)
+data UnionElement
+  = UEKeyChild Text
+  | UEIndexChild Int
+  | UESlice (Maybe Int) (Maybe Int) (Maybe Int)
   deriving (Show, Eq)
 
 data JSONPathElement
   = KeyChild Text
+  | IndexChild Int
   | AnyChild
-  | Slice SliceElement
-  | SliceUnion SliceElement SliceElement
+  | Slice (Maybe Int) (Maybe Int) (Maybe Int)
+  | Union [UnionElement]
   | Filter BeginningPoint [JSONPathElement] Condition Literal
   | Search [JSONPathElement]
   deriving (Show, Eq)
