@@ -188,7 +188,14 @@ comparable :: Parser a -> Parser Comparable
 comparable endParser = do
   CmpNumber <$> L.scientific
     <|> CmpString <$> quotedString
+    <|> CmpBool <$> bool
+    <|> CmpNull <$ string "null"
     <|> CmpPath <$> singularPath endParser
+
+bool :: Parser Bool
+bool =
+  True <$ string "true"
+    <|> False <$ string "false"
 
 ignoreSurroundingSpace :: Parser a -> Parser a
 ignoreSurroundingSpace p = space *> p <* space

@@ -6,12 +6,12 @@ module Data.JSONPath.Types
     UnionElement (..),
     FilterExpr (..),
     SingularPathElement (..),
-    SingularPath(..)
+    SingularPath (..),
   )
 where
 
-import Data.Text
 import Data.Scientific (Scientific)
+import Data.Text
 
 data BeginningPoint
   = Root
@@ -30,6 +30,8 @@ data Condition
 data Comparable
   = CmpNumber Scientific
   | CmpString Text
+  | CmpBool Bool
+  | CmpNull
   | CmpPath SingularPath
   deriving (Show, Eq)
 
