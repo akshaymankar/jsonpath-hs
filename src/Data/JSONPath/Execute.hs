@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.JSONPath.Execute (executeJSONPath, executeJSONPathElement) where
@@ -6,9 +7,10 @@ import Data.Aeson
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as Map
+import qualified Data.Foldable as Foldable
 import Data.Function ((&))
 import Data.JSONPath.Types
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.Maybe (fromMaybe, maybeToList, isJust)
 import qualified Data.Vector as V
 
 executeJSONPath :: [JSONPathElement] -> Value -> [Value]
@@ -17,42 +19,24 @@ executeJSONPath (j : js) v = executeJSONPath js =<< executeJSONPathElement j v
 
 executeJSONPathElement :: JSONPathElement -> Value -> [Value]
 executeJSONPathElement (KeyChild key) val =
-  case val of
-    Object o ->
-      maybeToList $
-        Map.lookup (Key.fromText key) o
-    _ -> []
+  maybeToList $ executeSingularPathElement (Key key) val
 executeJSONPathElement AnyChild val =
   case val of
     Object o -> map snd $ Map.toList o
     Array a -> V.toList a
     _ -> []
 executeJSONPathElement (IndexChild i) val =
-  case val of
-    Array a -> executeIndexChild i a
-    _ -> []
+  maybeToList $ executeSingularPathElement (Index i) val
 executeJSONPathElement (Slice start end step) val =
   case val of
     Array a -> executeSlice start end step a
     _ -> []
 executeJSONPathElement (Union elements) val =
   concatMap (flip executeUnionElement val) elements
-executeJSONPathElement (Filter _ jsonPath cond lit) val =
+executeJSONPathElement (Filter expr) val =
   case val of
-    Array a -> do
-      let l = V.toList a
-      map (executeJSONPath jsonPath) l
-        & zipWith
-          ( \x ys ->
-              -- Use found value, if it exists, otherwise use 'A.Null'. The
-              -- null value is helpful if the condition is 'NotEqual'
-              if length ys == 1
-                then (x, head ys)
-                else (x, A.Null)
-          )
-          l
-        & Prelude.filter (\(_, exprVal) -> executeCondition exprVal cond lit)
-        & Prelude.map fst
+    Array a -> executeFilter expr (V.toList a)
+    Object o -> executeFilter expr (Map.elems o)
     _ -> []
 executeJSONPathElement s@(Search js) val =
   let x = executeJSONPath js val
@@ -132,13 +116,48 @@ executeSlice mStart mEnd mStep v
       | step >= 0 = min (max normalizedEnd 0) len
       | otherwise = min (max normalizedStart (-1)) (len - 1)
 
-executeIndexChild :: Int -> V.Vector a -> [a]
+executeIndexChild :: Int -> V.Vector a -> Maybe a
 executeIndexChild i v =
   if i < 0
-    then maybeToList $ (V.!?) v (V.length v + i)
-    else maybeToList $ (V.!?) v i
+    then (V.!?) v (V.length v + i)
+    else (V.!?) v i
 
 executeUnionElement :: UnionElement -> Value -> [Value]
 executeUnionElement (UEIndexChild i) v = executeJSONPathElement (IndexChild i) v
 executeUnionElement (UESlice start end step) v = executeJSONPathElement (Slice start end step) v
 executeUnionElement (UEKeyChild child) v = executeJSONPathElement (KeyChild child) v
+
+executeSingularPathElement :: SingularPathElement -> Value -> Maybe Value
+executeSingularPathElement (Key key) val =
+  case val of
+    Object o -> Map.lookup (Key.fromText key) o
+    _ -> Nothing
+executeSingularPathElement (Index i) val =
+  case val of
+    Array a -> executeIndexChild i a
+    _ -> Nothing
+
+executeSingularPath :: [SingularPathElement] -> Value -> Maybe Value
+executeSingularPath ps val =
+  Foldable.foldl'
+    ( \case
+        Nothing -> const Nothing
+        Just v -> flip executeSingularPathElement v
+    )
+    (Just val)
+    ps
+
+executeFilter :: FilterExpr -> [Value] -> [Value]
+executeFilter expr = Prelude.filter (filterExprPred expr)
+
+filterExprPred :: FilterExpr -> Value -> Bool
+filterExprPred (ComparisonExpr _ path cond lit) val =
+  case executeSingularPath path val of
+    Nothing ->
+      -- This is not 'False' because the condition could be "!=".
+      executeCondition A.Null cond lit
+    Just v -> executeCondition v cond lit
+filterExprPred (ExistsExpr _ path) val = isJust $ executeSingularPath path val
+filterExprPred (Or e1 e2) val = filterExprPred e1 val || filterExprPred e2 val
+filterExprPred (And e1 e2) val = filterExprPred e1 val && filterExprPred e2 val
+filterExprPred (Not e) val = not $ filterExprPred e val
