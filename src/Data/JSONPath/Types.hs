@@ -4,6 +4,8 @@ module Data.JSONPath.Types
     Literal (..),
     JSONPathElement (..),
     UnionElement (..),
+    FilterExpr (..),
+    SingularPathElement (..)
   )
 where
 
@@ -28,6 +30,19 @@ data Literal
   | LitString Text
   deriving (Show, Eq)
 
+data SingularPathElement
+  = Key Text
+  | Index Int
+  deriving (Show, Eq)
+
+data FilterExpr
+  = ExistsExpr BeginningPoint [SingularPathElement]
+  | ComparisonExpr BeginningPoint [SingularPathElement] Condition Literal
+  | And FilterExpr FilterExpr
+  | Or FilterExpr FilterExpr
+  | Not FilterExpr
+  deriving (Show, Eq)
+
 data UnionElement
   = UEKeyChild Text
   | UEIndexChild Int
@@ -40,6 +55,6 @@ data JSONPathElement
   | AnyChild
   | Slice (Maybe Int) (Maybe Int) (Maybe Int)
   | Union [UnionElement]
-  | Filter BeginningPoint [JSONPathElement] Condition Literal
+  | Filter FilterExpr
   | Search [JSONPathElement]
   deriving (Show, Eq)

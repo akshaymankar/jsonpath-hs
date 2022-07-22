@@ -12,11 +12,11 @@ import Data.Scientific (toRealFloat)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Void (Void)
-import Text.Megaparsec as A
+import Text.Megaparsec as P
 import Text.Megaparsec.Char (char, space, string)
 import qualified Text.Megaparsec.Char.Lexer as L
 
-type Parser = A.ParsecT Void Text Identity
+type Parser = P.ParsecT Void Text Identity
 
 jsonPath :: Parser a -> Parser [JSONPathElement]
 jsonPath endParser = do
@@ -25,19 +25,18 @@ jsonPath endParser = do
 
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement =
-  do
+  ignoreSurroundingSpace $
     try anyChild
-    <|> try keyChildDot
-    <|> try keyChildBracket
-    <|> try slice
-    <|> try indexChild
-    <|> try union
-    <|> try filterParser
-    <|> try search
-    <|> searchBeginningWithSlice
+      <|> try keyChild
+      <|> try slice
+      <|> try indexChild
+      <|> try union
+      <|> try filterParser
+      <|> try search
+      <|> searchBeginningWithSlice
 
 indexChild :: Parser JSONPathElement
-indexChild = IndexChild <$> ignoreSurroundingSqBr indexChildWithoutBrackets
+indexChild = IndexChild <$> inSqBr indexChildWithoutBrackets
 
 indexChildWithoutBrackets :: Parser Int
 indexChildWithoutBrackets = ignoreSurroundingSpace $ L.signed space L.decimal
@@ -45,7 +44,7 @@ indexChildWithoutBrackets = ignoreSurroundingSpace $ L.signed space L.decimal
 slice :: Parser JSONPathElement
 slice =
   uncurry3 Slice
-    <$> ignoreSurroundingSqBr sliceWithoutBrackets
+    <$> inSqBr sliceWithoutBrackets
 
 sliceWithoutBrackets :: Parser (Maybe Int, Maybe Int, Maybe Int)
 sliceWithoutBrackets = do
@@ -66,24 +65,22 @@ sliceWithoutBrackets = do
       optional (char ':')
         *> ignoreSurroundingSpace (optional (L.signed space L.decimal))
 
-keyChildBracket :: Parser JSONPathElement
-keyChildBracket =
-  ignoreSurroundingSqBr $
-    ignoreSurroundingSpace $
-      KeyChild <$> quotedString
+keyChild :: Parser JSONPathElement
+keyChild = KeyChild <$> (try sqBrKeyChild <|> dotKeyChild)
 
-keyChildDot :: Parser JSONPathElement
-keyChildDot =
-  KeyChild
-    <$ char '.'
-    <*> takeWhile1P Nothing (\c -> Char.isAlphaNum c || c == '-' || c == '_')
+sqBrKeyChild :: Parser Text
+sqBrKeyChild =
+  inSqBr $ ignoreSurroundingSpace quotedString
+
+dotKeyChild :: Parser Text
+dotKeyChild = char '.' *> takeWhile1P Nothing (\c -> Char.isAlphaNum c || c == '-' || c == '_')
 
 anyChild :: Parser JSONPathElement
-anyChild = AnyChild <$ (string ".*" <|> string "[*]")
+anyChild = ignoreSurroundingSpace $ AnyChild <$ (void (string ".*") <|> void (inSqBr (char '*')))
 
 union :: Parser JSONPathElement
 union =
-  ignoreSurroundingSqBr $
+  inSqBr $
     Union <$> do
       firstElement <- unionElement
       restElements <- some (char ',' *> unionElement)
@@ -96,14 +93,66 @@ unionElement =
     <|> UEKeyChild <$> ignoreSurroundingSpace quotedString
 
 filterParser :: Parser JSONPathElement
-filterParser = do
-  _ <- string "[?("
-  b <- beginningPoint
-  js <- jsonPath condition
-  c <- condition
-  l <- literal
-  _ <- string ")]"
-  return $ Filter b js c l
+filterParser = inSqBr $ do
+  _ <- ignoreSurroundingSpace $ char '?'
+  Filter <$> filterExpr (ignoreSurroundingSpace (char ']'))
+
+filterExpr :: Parser a -> Parser FilterExpr
+filterExpr endParser =
+  try (orFilterExpr endParser)
+    <|> try (andFilterExpr endParser)
+    <|> basicFilterExpr endParser
+
+basicFilterExpr :: Parser a -> Parser FilterExpr
+basicFilterExpr endParser = do
+  maybeNot <- optional (char '!')
+  expr <-
+    try (comparisionFilterExpr endParser)
+      <|> try (existsFilterExpr endParser)
+      <|> (inParens (filterExpr closingParen) <* lookAhead endParser)
+  case maybeNot of
+    Nothing -> pure expr
+    Just _ -> pure $ Not expr
+
+comparisionFilterExpr :: Parser a -> Parser FilterExpr
+comparisionFilterExpr endParser = do
+  expr <-
+    ComparisonExpr
+      <$> beginningPoint
+      <*> manyTill singularPathElement (lookAhead condition)
+      <*> condition
+      <*> literal
+  _ <- lookAhead endParser
+  pure expr
+
+existsFilterExpr :: Parser a -> Parser FilterExpr
+existsFilterExpr endParser =
+  ExistsExpr
+    <$> beginningPoint
+    <*> manyTill singularPathElement (lookAhead endParser)
+
+singularPathElement :: Parser SingularPathElement
+singularPathElement =
+  (Key <$> try dotKeyChild)
+    <|> (Key <$> try sqBrKeyChild)
+    <|> Index <$> inSqBr indexChildWithoutBrackets
+
+orFilterExpr :: Parser a -> Parser FilterExpr
+orFilterExpr endParser = do
+  let orOperator = ignoreSurroundingSpace $ string "||"
+  e1 <-
+    -- If there is an '&&' operation, it should take precedence over the '||'
+    try (andFilterExpr orOperator)
+      <|> basicFilterExpr orOperator
+  _ <- orOperator
+  Or e1 <$> filterExpr endParser
+
+andFilterExpr :: Parser a -> Parser FilterExpr
+andFilterExpr endParser = do
+  let andOperator = ignoreSurroundingSpace $ string "&&"
+  e1 <- basicFilterExpr andOperator
+  _ <- andOperator
+  And e1 <$> filterExpr endParser
 
 search :: Parser JSONPathElement
 search = do
@@ -118,8 +167,9 @@ searchBeginningWithSlice = do
   Search <$> some jsonPathElement
 
 beginningPoint :: Parser BeginningPoint
-beginningPoint = do
-  (char '$' $> Root) <|> (char '@' $> CurrentObject)
+beginningPoint =
+  try (char '$' $> Root)
+    <|> (char '@' $> CurrentObject)
 
 condition :: Parser Condition
 condition =
@@ -141,11 +191,26 @@ double = toRealFloat <$> L.scientific
 ignoreSurroundingSpace :: Parser a -> Parser a
 ignoreSurroundingSpace p = space *> p <* space
 
-ignoreSurroundingSqBr :: Parser a -> Parser a
-ignoreSurroundingSqBr p = char '[' *> p <* char ']'
+inSqBr :: Parser a -> Parser a
+inSqBr p = openingSqBr *> p <* closingSqBr
+
+openingSqBr :: Parser Char
+openingSqBr = ignoreSurroundingSpace (char '[')
+
+closingSqBr :: Parser Char
+closingSqBr = ignoreSurroundingSpace (char ']')
+
+inParens :: Parser a -> Parser a
+inParens p = openingParen *> p <* closingParen
+
+openingParen :: Parser Char
+openingParen = ignoreSurroundingSpace (char '(')
+
+closingParen :: Parser Char
+closingParen = ignoreSurroundingSpace (char ')')
 
 quotedString :: Parser Text
-quotedString = Text.pack <$> (inQuotes '"' <|> inQuotes '\'')
+quotedString = ignoreSurroundingSpace $ Text.pack <$> (inQuotes '"' <|> inQuotes '\'')
   where
     inQuotes quoteChar =
       char quoteChar *> manyTill L.charLiteral (char quoteChar)
