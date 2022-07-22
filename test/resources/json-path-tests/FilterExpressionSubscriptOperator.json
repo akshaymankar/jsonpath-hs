@@ -3,6 +3,7 @@
     "data" : {"arr" : [4,
                        "string",
                        false,
+                       null,
                        [1, 2, 3], {
                            "index" : 1,
                            "name" : "John Doe",
@@ -43,6 +44,7 @@
                "result" : [4,
                            "string",
                            false,
+                           null,
                            [1, 2, 3], {
                                "index" : 3,
                                "name" : "John Smith",
@@ -133,6 +135,7 @@
              "result" : [4,
                        "string",
                        false,
+                       null,
                        [1, 2, 3], {
                            "index" : 1,
                            "name" : "John Doe",
@@ -159,6 +162,7 @@
              "result" : [4,
                          "string",
                          false,
+                         null,
                          [1, 2, 3], {
                            "index" : 1,
                            "name" : "John Doe",
@@ -185,6 +189,7 @@
              "result" : [4,
                          "string",
                          false,
+                         null,
                          [1, 2, 3], {
                            "index" : 1,
                            "name" : "John Doe",
@@ -237,12 +242,13 @@
              "path": "$[?@.foo < @.baz.qux]",
              "result": [{"foo": 1, "bar": 2, "baz": {"qux": 3}, "bux": 4}]
            }, {
-             "path": "$[?@[0] == @[7].index]",
+             "path": "$[?@[0] == @[8].index]",
              "comment": "Both arr and obj match this as 4 == 4 for arr and no_path == no_path for obj",
              "result": [
                [4,
                 "string",
                 false,
+                null,
                 [1, 2, 3], {
                   "index" : 1,
                   "name" : "John Doe",
@@ -267,11 +273,12 @@
                {"foo": 1, "bar": 2, "baz": {"qux": 3}, "bux": 4}
              ]
            }, {
-             "path": "$[?@[0] && @[0] == @[7].index]",
+             "path": "$[?@[0] && @[0] == @[8].index]",
              "result": [
                [4,
                 "string",
                 false,
+                null,
                 [1, 2, 3], {
                   "index" : 1,
                   "name" : "John Doe",
@@ -297,6 +304,15 @@
            }, {
              "path": "$.arr[?@ > 3]",
              "result": [4]
+           }, {
+             "path": "$.arr[?@ == null]",
+             "result": [null]
+           }, {
+             "path": "$.arr[?@ == false]",
+             "result": [false]
+           }, {
+             "path": "$.arr[?@ == true]",
+             "result": []
            }
     ]
 

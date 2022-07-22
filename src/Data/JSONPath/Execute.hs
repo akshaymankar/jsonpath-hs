@@ -55,11 +55,24 @@ executeConditionOnMaybes Nothing NotEqual (Just _) = True
 executeConditionOnMaybes (Just _) NotEqual Nothing = True
 executeConditionOnMaybes _ _ _ = False
 
+{- ORMOLU_DISABLE -}
+isEqualTo :: Value -> Value -> Bool
+(Object _) `isEqualTo` _          = False
+_          `isEqualTo` (Object _) = False
+(Array _)  `isEqualTo` _          = False
+_          `isEqualTo` (Array _)  = False
+val1       `isEqualTo` val2       = val1 == val2
+
+isSmallerThan :: Value -> Value -> Bool
+(Number n1) `isSmallerThan` (Number n2) = n1 < n2
+(String s1) `isSmallerThan` (String s2) = s1 < s2
+_           `isSmallerThan` _ = False
+{- ORMOLU_ENABLE -}
+
 executeCondition :: Value -> Condition -> Value -> Bool
 executeCondition val1 NotEqual val2 = not (executeCondition val1 Equal val2)
-executeCondition (Number n1) Equal (Number n2) = n1 == realToFrac n2
-executeCondition (String s1) Equal (String s2) = s1 == s2
-executeCondition _ Equal _ = False
+executeCondition val1 Equal val2 = val1 `isEqualTo` val2
+executeCondition val1 SmallerThan val2 = val1 `isSmallerThan` val2
 executeCondition val1 GreaterThan val2 =
   canCompare val1 val2
     && not (executeCondition val1 SmallerThan val2)
@@ -67,9 +80,6 @@ executeCondition val1 GreaterThan val2 =
 executeCondition val GreaterThanOrEqual lit =
   canCompare val lit
     && not (executeCondition val SmallerThan lit)
-executeCondition (Number n1) SmallerThan (Number n2) = n1 < realToFrac n2
-executeCondition (String s1) SmallerThan (String s2) = s1 < s2
-executeCondition _ SmallerThan _ = False
 executeCondition val1 SmallerThanOrEqual val2 =
   canCompare val1 val2
     && not (executeCondition val1 GreaterThan val2)
@@ -159,7 +169,9 @@ executeFilter expr = Prelude.filter (filterExprPred expr)
 
 comparableToValue :: Comparable -> Value -> Maybe Value
 comparableToValue (CmpNumber n) _ = Just $ Number n
-comparableToValue (CmpString n) _ = Just $ String n
+comparableToValue (CmpString s) _ = Just $ String s
+comparableToValue (CmpBool b) _ = Just $ Bool b
+comparableToValue CmpNull _ = Just Null
 comparableToValue (CmpPath p) val = executeSingularPath p val
 
 filterExprPred :: FilterExpr -> Value -> Bool
