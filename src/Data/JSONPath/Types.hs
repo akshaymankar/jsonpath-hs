@@ -1,15 +1,17 @@
 module Data.JSONPath.Types
   ( BeginningPoint (..),
     Condition (..),
-    Literal (..),
+    Comparable (..),
     JSONPathElement (..),
     UnionElement (..),
     FilterExpr (..),
-    SingularPathElement (..)
+    SingularPathElement (..),
+    SingularPath(..)
   )
 where
 
 import Data.Text
+import Data.Scientific (Scientific)
 
 data BeginningPoint
   = Root
@@ -25,9 +27,10 @@ data Condition
   | SmallerThanOrEqual
   deriving (Show, Eq)
 
-data Literal
-  = LitNumber Double
-  | LitString Text
+data Comparable
+  = CmpNumber Scientific
+  | CmpString Text
+  | CmpPath SingularPath
   deriving (Show, Eq)
 
 data SingularPathElement
@@ -35,9 +38,13 @@ data SingularPathElement
   | Index Int
   deriving (Show, Eq)
 
+data SingularPath
+  = SingularPath BeginningPoint [SingularPathElement]
+  deriving (Show, Eq)
+
 data FilterExpr
-  = ExistsExpr BeginningPoint [SingularPathElement]
-  | ComparisonExpr BeginningPoint [SingularPathElement] Condition Literal
+  = ExistsExpr SingularPath
+  | ComparisonExpr Comparable Condition Comparable
   | And FilterExpr FilterExpr
   | Or FilterExpr FilterExpr
   | Not FilterExpr

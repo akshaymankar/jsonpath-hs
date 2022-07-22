@@ -4,13 +4,11 @@
 module Data.JSONPath.Execute (executeJSONPath, executeJSONPathElement) where
 
 import Data.Aeson
-import qualified Data.Aeson as A
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as Map
 import qualified Data.Foldable as Foldable
-import Data.Function ((&))
 import Data.JSONPath.Types
-import Data.Maybe (fromMaybe, maybeToList, isJust)
+import Data.Maybe (fromMaybe, isJust, maybeToList)
 import qualified Data.Vector as V
 
 executeJSONPath :: [JSONPathElement] -> Value -> [Value]
@@ -48,28 +46,37 @@ valMap f (Object o) = map snd . Map.toList $ Map.map f o
 valMap f (Array a) = V.toList $ V.map f a
 valMap _ _ = []
 
-executeCondition :: Value -> Condition -> Literal -> Bool
-executeCondition val NotEqual lit = not (executeCondition val Equal lit)
-executeCondition (Number n1) Equal (LitNumber n2) = n1 == realToFrac n2
-executeCondition (String s1) Equal (LitString s2) = s1 == s2
+executeConditionOnMaybes :: Maybe Value -> Condition -> Maybe Value -> Bool
+executeConditionOnMaybes (Just val1) c (Just val2) = executeCondition val1 c val2
+executeConditionOnMaybes Nothing Equal Nothing = True
+executeConditionOnMaybes Nothing GreaterThanOrEqual Nothing = True
+executeConditionOnMaybes Nothing SmallerThanOrEqual Nothing = True
+executeConditionOnMaybes Nothing NotEqual (Just _) = True
+executeConditionOnMaybes (Just _) NotEqual Nothing = True
+executeConditionOnMaybes _ _ _ = False
+
+executeCondition :: Value -> Condition -> Value -> Bool
+executeCondition val1 NotEqual val2 = not (executeCondition val1 Equal val2)
+executeCondition (Number n1) Equal (Number n2) = n1 == realToFrac n2
+executeCondition (String s1) Equal (String s2) = s1 == s2
 executeCondition _ Equal _ = False
-executeCondition val GreaterThan lit =
-  canCompare val lit
-    && not (executeCondition val SmallerThan lit)
-    && not (executeCondition val Equal lit)
+executeCondition val1 GreaterThan val2 =
+  canCompare val1 val2
+    && not (executeCondition val1 SmallerThan val2)
+    && not (executeCondition val1 Equal val2)
 executeCondition val GreaterThanOrEqual lit =
   canCompare val lit
     && not (executeCondition val SmallerThan lit)
-executeCondition (Number n1) SmallerThan (LitNumber n2) = n1 < realToFrac n2
-executeCondition (String s1) SmallerThan (LitString s2) = s1 < s2
+executeCondition (Number n1) SmallerThan (Number n2) = n1 < realToFrac n2
+executeCondition (String s1) SmallerThan (String s2) = s1 < s2
 executeCondition _ SmallerThan _ = False
-executeCondition val SmallerThanOrEqual lit =
-  canCompare val lit
-    && not (executeCondition val GreaterThan lit)
+executeCondition val1 SmallerThanOrEqual val2 =
+  canCompare val1 val2
+    && not (executeCondition val1 GreaterThan val2)
 
-canCompare :: Value -> Literal -> Bool
-canCompare (Number _) (LitNumber _) = True
-canCompare (String _) (LitString _) = True
+canCompare :: Value -> Value -> Bool
+canCompare (Number _) (Number _) = True
+canCompare (String _) (String _) = True
 canCompare _ _ = False
 
 -- | Implementation is based on
@@ -137,8 +144,8 @@ executeSingularPathElement (Index i) val =
     Array a -> executeIndexChild i a
     _ -> Nothing
 
-executeSingularPath :: [SingularPathElement] -> Value -> Maybe Value
-executeSingularPath ps val =
+executeSingularPath :: SingularPath -> Value -> Maybe Value
+executeSingularPath (SingularPath _ ps) val =
   Foldable.foldl'
     ( \case
         Nothing -> const Nothing
@@ -150,14 +157,17 @@ executeSingularPath ps val =
 executeFilter :: FilterExpr -> [Value] -> [Value]
 executeFilter expr = Prelude.filter (filterExprPred expr)
 
+comparableToValue :: Comparable -> Value -> Maybe Value
+comparableToValue (CmpNumber n) _ = Just $ Number n
+comparableToValue (CmpString n) _ = Just $ String n
+comparableToValue (CmpPath p) val = executeSingularPath p val
+
 filterExprPred :: FilterExpr -> Value -> Bool
-filterExprPred (ComparisonExpr _ path cond lit) val =
-  case executeSingularPath path val of
-    Nothing ->
-      -- This is not 'False' because the condition could be "!=".
-      executeCondition A.Null cond lit
-    Just v -> executeCondition v cond lit
-filterExprPred (ExistsExpr _ path) val = isJust $ executeSingularPath path val
+filterExprPred (ComparisonExpr cmp1 cond cmp2) val =
+  let val1 = comparableToValue cmp1 val
+      val2 = comparableToValue cmp2 val
+   in executeConditionOnMaybes val1 cond val2
+filterExprPred (ExistsExpr path) val = isJust $ executeSingularPath path val
 filterExprPred (Or e1 e2) val = filterExprPred e1 val || filterExprPred e2 val
 filterExprPred (And e1 e2) val = filterExprPred e1 val && filterExprPred e2 val
 filterExprPred (Not e) val = not $ filterExprPred e val

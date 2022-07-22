@@ -68,9 +68,9 @@ group TestGroup {..} = do
   describe (unpack groupTitle) $
     mapM_ (test groupData) groupTests
 
--- | 10 ms
+-- | 100 ms
 timeLimit :: Int
-timeLimit = 10000
+timeLimit = 100000
 
 test :: Value -> Test -> Spec
 test testData (Test path expected) =
