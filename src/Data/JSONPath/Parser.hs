@@ -118,16 +118,19 @@ comparisionFilterExpr :: Parser a -> Parser FilterExpr
 comparisionFilterExpr endParser = do
   expr <-
     ComparisonExpr
-      <$> beginningPoint
-      <*> manyTill singularPathElement (lookAhead condition)
+      <$> comparable condition
       <*> condition
-      <*> literal
+      <*> comparable endParser
   _ <- lookAhead endParser
   pure expr
 
 existsFilterExpr :: Parser a -> Parser FilterExpr
 existsFilterExpr endParser =
-  ExistsExpr
+  ExistsExpr <$> singularPath endParser
+
+singularPath :: Parser a -> Parser SingularPath
+singularPath endParser =
+  SingularPath
     <$> beginningPoint
     <*> manyTill singularPathElement (lookAhead endParser)
 
@@ -181,12 +184,11 @@ condition =
       <|> string ">" $> GreaterThan
       <|> string "<" $> SmallerThan
 
-literal :: Parser Literal
-literal = do
-  LitNumber <$> double <|> LitString <$> quotedString
-
-double :: Parser Double
-double = toRealFloat <$> L.scientific
+comparable :: Parser a -> Parser Comparable
+comparable endParser = do
+  CmpNumber <$> L.scientific
+    <|> CmpString <$> quotedString
+    <|> CmpPath <$> singularPath endParser
 
 ignoreSurroundingSpace :: Parser a -> Parser a
 ignoreSurroundingSpace p = space *> p <* space
