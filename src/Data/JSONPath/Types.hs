@@ -18,13 +18,15 @@ data BeginningPoint
   | CurrentObject
   deriving (Show, Eq)
 
-data Condition
-  = Equal
-  | NotEqual
-  | GreaterThan
-  | SmallerThan
-  | GreaterThanOrEqual
-  | SmallerThanOrEqual
+-- | A JSONPath which finds at max one value, given a beginning point. Used by
+-- 'FilterExpr' for 'ExistsExpr' and 'ComparisonExpr'.
+data SingularPath
+  = SingularPath BeginningPoint [SingularPathElement]
+  deriving (Show, Eq)
+
+data SingularPathElement
+  = Key Text
+  | Index Int
   deriving (Show, Eq)
 
 data Comparable
@@ -35,13 +37,13 @@ data Comparable
   | CmpPath SingularPath
   deriving (Show, Eq)
 
-data SingularPathElement
-  = Key Text
-  | Index Int
-  deriving (Show, Eq)
-
-data SingularPath
-  = SingularPath BeginningPoint [SingularPathElement]
+data Condition
+  = Equal
+  | NotEqual
+  | GreaterThan
+  | SmallerThan
+  | GreaterThanOrEqual
+  | SmallerThanOrEqual
   deriving (Show, Eq)
 
 data FilterExpr
@@ -52,18 +54,27 @@ data FilterExpr
   | Not FilterExpr
   deriving (Show, Eq)
 
+-- | Elements which can occur inside a union
 data UnionElement
   = UEKeyChild Text
   | UEIndexChild Int
   | UESlice (Maybe Int) (Maybe Int) (Maybe Int)
   deriving (Show, Eq)
 
+-- | A 'JSONPath' is a list of 'JSONPathElement's.
 data JSONPathElement
-  = KeyChild Text
-  | IndexChild Int
-  | AnyChild
-  | Slice (Maybe Int) (Maybe Int) (Maybe Int)
-  | Union [UnionElement]
-  | Filter FilterExpr
-  | Search [JSONPathElement]
+  = -- | '$.foo' or '$["foo"]'
+    KeyChild Text
+  | -- | '$[1]'
+    IndexChild Int
+  | -- | '$[*]'
+    AnyChild
+  | -- | '$[1:7]', '$[0:10:2]', '$[::2]', '$[::]', etc.
+    Slice (Maybe Int) (Maybe Int) (Maybe Int)
+  | -- | '$[0,1,9]' or '$[0, 1:2, "foo", "bar"]'
+    Union [UnionElement]
+  | -- | '$[?(@.foo == 42)]', '$[?(@.foo > @.bar)]', etc.
+    Filter FilterExpr
+  | -- | '$..foo.bar'
+    Search [JSONPathElement]
   deriving (Show, Eq)

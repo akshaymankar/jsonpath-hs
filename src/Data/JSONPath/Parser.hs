@@ -8,7 +8,6 @@ import qualified Data.Char as Char
 import Data.Functor
 import Data.Functor.Identity
 import Data.JSONPath.Types
-import Data.Scientific (toRealFloat)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Void (Void)
