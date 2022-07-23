@@ -1,7 +1,7 @@
 cabal-version: 1.12
 
 name:           jsonpath
-version:        0.2.1.0
+version:        0.3.0.0
 synopsis:       Library to parse and execute JSONPath
 description:    Please see the README on GitHub at <https://github.com/akshaymankar/jsonpath-hs#readme>
 category:       Text, Web, JSON
