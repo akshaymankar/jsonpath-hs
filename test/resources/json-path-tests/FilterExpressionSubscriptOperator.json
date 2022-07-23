@@ -313,6 +313,13 @@
            }, {
              "path": "$.arr[?@ == true]",
              "result": []
+           }, {
+             "path": "$.arr[?@.index == $.obj.bux]",
+             "result": [{
+               "index" : 4,
+               "name" : "Jane Doe",
+               "occupation" : "Pilot"
+             }]
            }
     ]
 

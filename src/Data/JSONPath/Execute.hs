@@ -9,36 +9,39 @@ import qualified Data.Aeson.KeyMap as Map
 import qualified Data.Foldable as Foldable
 import Data.JSONPath.Types
 import Data.Maybe (fromMaybe, isJust, maybeToList)
+import Data.Text (Text)
 import qualified Data.Vector as V
 
 executeJSONPath :: [JSONPathElement] -> Value -> [Value]
-executeJSONPath [] v = [v]
-executeJSONPath (j : js) v = executeJSONPath js =<< executeJSONPathElement j v
+executeJSONPath path rootVal = go path rootVal
+  where
+    go :: [JSONPathElement] -> Value -> [Value]
+    go [] v = [v]
+    go (j : js) v =
+      go js =<< executeJSONPathElement j rootVal v
 
-executeJSONPathElement :: JSONPathElement -> Value -> [Value]
-executeJSONPathElement (KeyChild key) val =
-  maybeToList $ executeSingularPathElement (Key key) val
-executeJSONPathElement AnyChild val =
+executeJSONPathElement :: JSONPathElement -> Value -> Value -> [Value]
+executeJSONPathElement (KeyChild key) _ val =
+  executeKeyChildOnValue key val
+executeJSONPathElement AnyChild _ val =
   case val of
     Object o -> map snd $ Map.toList o
     Array a -> V.toList a
     _ -> []
-executeJSONPathElement (IndexChild i) val =
-  maybeToList $ executeSingularPathElement (Index i) val
-executeJSONPathElement (Slice start end step) val =
-  case val of
-    Array a -> executeSlice start end step a
-    _ -> []
-executeJSONPathElement (Union elements) val =
+executeJSONPathElement (IndexChild i) _ val =
+  executeIndexChildOnValue i val
+executeJSONPathElement (Slice start end step) _ val =
+  executeSliceOnValue start end step val
+executeJSONPathElement (Union elements) _ val =
   concatMap (flip executeUnionElement val) elements
-executeJSONPathElement (Filter expr) val =
+executeJSONPathElement (Filter expr) rootVal val =
   case val of
-    Array a -> executeFilter expr (V.toList a)
-    Object o -> executeFilter expr (Map.elems o)
+    Array a -> executeFilter expr rootVal (V.toList a)
+    Object o -> executeFilter expr rootVal (Map.elems o)
     _ -> []
-executeJSONPathElement s@(Search js) val =
+executeJSONPathElement s@(Search js) origVal val =
   let x = executeJSONPath js val
-      y = mconcat $ valMap (executeJSONPathElement s) val
+      y = mconcat $ valMap (executeJSONPathElement s origVal) val
    in x <> y
 
 valMap :: ToJSON b => (Value -> [b]) -> Value -> [[b]]
@@ -88,6 +91,12 @@ canCompare :: Value -> Value -> Bool
 canCompare (Number _) (Number _) = True
 canCompare (String _) (String _) = True
 canCompare _ _ = False
+
+executeSliceOnValue :: Maybe Int -> Maybe Int -> Maybe Int -> Value -> [Value]
+executeSliceOnValue start end step val =
+  case val of
+    Array a -> executeSlice start end step a
+    _ -> []
 
 -- | Implementation is based on
 -- https://ietf-wg-jsonpath.github.io/draft-ietf-jsonpath-base/draft-ietf-jsonpath-base.html#name-array-slice-selector
@@ -140,9 +149,17 @@ executeIndexChild i v =
     else (V.!?) v i
 
 executeUnionElement :: UnionElement -> Value -> [Value]
-executeUnionElement (UEIndexChild i) v = executeJSONPathElement (IndexChild i) v
-executeUnionElement (UESlice start end step) v = executeJSONPathElement (Slice start end step) v
-executeUnionElement (UEKeyChild child) v = executeJSONPathElement (KeyChild child) v
+executeUnionElement (UEIndexChild i) v = executeIndexChildOnValue i v
+executeUnionElement (UESlice start end step) v = executeSliceOnValue start end step v
+executeUnionElement (UEKeyChild child) v = executeKeyChildOnValue child v
+
+executeKeyChildOnValue :: Text -> Value -> [Value]
+executeKeyChildOnValue key val =
+  maybeToList $ executeSingularPathElement (Key key) val
+
+executeIndexChildOnValue :: Int -> Value -> [Value]
+executeIndexChildOnValue i val =
+  maybeToList $ executeSingularPathElement (Index i) val
 
 executeSingularPathElement :: SingularPathElement -> Value -> Maybe Value
 executeSingularPathElement (Key key) val =
@@ -154,32 +171,42 @@ executeSingularPathElement (Index i) val =
     Array a -> executeIndexChild i a
     _ -> Nothing
 
-executeSingularPath :: SingularPath -> Value -> Maybe Value
-executeSingularPath (SingularPath _ ps) val =
-  Foldable.foldl'
-    ( \case
-        Nothing -> const Nothing
-        Just v -> flip executeSingularPathElement v
-    )
-    (Just val)
-    ps
+executeSingularPath :: SingularPath -> Value -> Value -> Maybe Value
+executeSingularPath (SingularPath beginnigPoint ps) rootVal currentVal =
+  let val = case beginnigPoint of
+        Root -> rootVal
+        CurrentObject -> currentVal
+   in Foldable.foldl'
+        ( \case
+            Nothing -> const Nothing
+            Just v -> flip executeSingularPathElement v
+        )
+        (Just val)
+        ps
 
-executeFilter :: FilterExpr -> [Value] -> [Value]
-executeFilter expr = Prelude.filter (filterExprPred expr)
+executeFilter :: FilterExpr -> Value -> [Value] -> [Value]
+executeFilter expr rootVal = Prelude.filter (filterExprPred expr rootVal)
 
-comparableToValue :: Comparable -> Value -> Maybe Value
-comparableToValue (CmpNumber n) _ = Just $ Number n
-comparableToValue (CmpString s) _ = Just $ String s
-comparableToValue (CmpBool b) _ = Just $ Bool b
-comparableToValue CmpNull _ = Just Null
-comparableToValue (CmpPath p) val = executeSingularPath p val
+comparableToValue :: Comparable -> Value -> Value -> Maybe Value
+comparableToValue (CmpNumber n) _ _ = Just $ Number n
+comparableToValue (CmpString s) _ _ = Just $ String s
+comparableToValue (CmpBool b) _ _ = Just $ Bool b
+comparableToValue CmpNull _ _ = Just Null
+comparableToValue (CmpPath p) rootVal val =
+  executeSingularPath p rootVal val
 
-filterExprPred :: FilterExpr -> Value -> Bool
-filterExprPred (ComparisonExpr cmp1 cond cmp2) val =
-  let val1 = comparableToValue cmp1 val
-      val2 = comparableToValue cmp2 val
-   in executeConditionOnMaybes val1 cond val2
-filterExprPred (ExistsExpr path) val = isJust $ executeSingularPath path val
-filterExprPred (Or e1 e2) val = filterExprPred e1 val || filterExprPred e2 val
-filterExprPred (And e1 e2) val = filterExprPred e1 val && filterExprPred e2 val
-filterExprPred (Not e) val = not $ filterExprPred e val
+filterExprPred :: FilterExpr -> Value -> Value -> Bool
+filterExprPred expr rootVal val =
+  case expr of
+    ComparisonExpr cmp1 cond cmp2 ->
+      let val1 = comparableToValue cmp1 rootVal val
+          val2 = comparableToValue cmp2 rootVal val
+       in executeConditionOnMaybes val1 cond val2
+    ExistsExpr path ->
+      isJust $ executeSingularPath path rootVal val
+    Or e1 e2 ->
+      filterExprPred e1 rootVal val || filterExprPred e2 rootVal val
+    And e1 e2 ->
+      filterExprPred e1 rootVal val && filterExprPred e2 rootVal val
+    Not e ->
+      not $ filterExprPred e rootVal val
