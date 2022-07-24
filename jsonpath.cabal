@@ -16,11 +16,7 @@ build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
-    test/resources/json-path-tests/DotOperator.json
-    test/resources/json-path-tests/EmptyPath.json
-    test/resources/json-path-tests/FilterExpressionSubscriptOperator.json
-    test/resources/json-path-tests/IndexedSubscriptOperator.json
-    test/resources/json-path-tests/SearchOperator.json
+    test/resources/json-path-tests/*.json
 
 source-repository head
   type: git
