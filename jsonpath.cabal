@@ -47,6 +47,7 @@ test-suite jsonpath-test
   main-is: Spec.hs
   other-modules:
       Data.JSONPathSpec
+      Data.JSONPathCTSSpec
       Paths_jsonpath
   hs-source-dirs:
       test

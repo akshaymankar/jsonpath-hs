@@ -27,12 +27,11 @@ import Text.Megaparsec
 data Test = Test
   { name :: Text,
     selector :: Text,
-    document :: Value,
-    result :: Value
-  } | ParseTest {
-    name :: Text,
-    selector :: Text,
-    invalid_selector :: Bool
+
+    document :: Maybe Value,
+    result :: Maybe Value,
+
+    invalid_selector :: Maybe Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -77,7 +76,7 @@ timeLimit :: Int
 timeLimit = 100000
 
 test :: Test -> Spec
-test (Test name path testData expected) =
+test (Test name path (Just testData) (Just expected) _) =
   it (unpack path) $ do
     mResult <-
       liftIO $
@@ -102,7 +101,7 @@ test (Test name path testData expected) =
       Bool False -> result `shouldSatisfy` isLeft
       v -> expectationFailure $ "Invalid result in test data " <> LazyText.unpack (encodeToLazyText v)
 
-test (ParseTest name path _) =
+test (Test name path _ _ _) =
   it (unpack path) $ do
     mResult <-
       liftIO $
