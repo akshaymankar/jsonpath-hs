@@ -27,10 +27,8 @@ import Text.Megaparsec
 data Test = Test
   { name :: Text,
     selector :: Text,
-
     document :: Maybe Value,
     result :: Maybe Value,
-
     invalid_selector :: Maybe Bool
   }
   deriving (Eq, Show, Generic)
@@ -100,7 +98,6 @@ test (Test name path (Just testData) (Just expected) _) =
         Right r -> r `shouldMatchList` V.toList a
       Bool False -> result `shouldSatisfy` isLeft
       v -> expectationFailure $ "Invalid result in test data " <> LazyText.unpack (encodeToLazyText v)
-
 test (Test name path _ _ _) =
   it (unpack path) $ do
     mResult <-
@@ -109,7 +106,9 @@ test (Test name path _ _ _) =
           -- Using '$!' here ensures that the computation is strict, so this can
           -- be timed out properly
           pure $! do
-            parseJSONPath path
+            parsed <- parseJSONPath path
+            -- TODO: no need to run the query, but need to figure out what to return instead
+            Right $ executeJSONPath parsed Null
 
     result <- case mResult of
       Just r -> pure r
