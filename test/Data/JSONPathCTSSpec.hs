@@ -27,10 +27,11 @@ import Text.Megaparsec
 data Test = Test
   { name :: Text,
     selector :: Text,
-
     document :: Value,
-    result :: Value,
-
+    result :: Value
+  } | ParseTest {
+    name :: Text,
+    selector :: Text,
     invalid_selector :: Bool
   }
   deriving (Eq, Show, Generic)
@@ -45,9 +46,9 @@ $(deriveJSON defaultOptions ''CTS)
 
 spec :: Spec
 spec =
-  let testFiles = map snd $(embedFile "test/resources/jsonpath-compliance-test-suite/cts.json")
+  let testFiles = $(embedFile "test/resources/jsonpath-compliance-test-suite/cts.json")
       testVals :: Either String [CTS]
-      testVals = traverse (eitherDecode . LBS.fromStrict) testFiles
+      testVals = traverse (eitherDecode . LBS.fromStrict) [testFiles]
    in case testVals of
         Left e ->
           describe "JSONPath Compliance Test Suite" $
@@ -75,8 +76,8 @@ group CTS {..} = do
 timeLimit :: Int
 timeLimit = 100000
 
-test :: Value -> Test -> Spec
-test testData (Test path expected) =
+test :: Test -> Spec
+test (Test name path testData expected) =
   it (unpack path) $ do
     mResult <-
       liftIO $
@@ -100,3 +101,21 @@ test testData (Test path expected) =
         Right r -> r `shouldMatchList` V.toList a
       Bool False -> result `shouldSatisfy` isLeft
       v -> expectationFailure $ "Invalid result in test data " <> LazyText.unpack (encodeToLazyText v)
+
+test (ParseTest name path _) =
+  it (unpack path) $ do
+    mResult <-
+      liftIO $
+        timeout timeLimit $ do
+          -- Using '$!' here ensures that the computation is strict, so this can
+          -- be timed out properly
+          pure $! do
+            parseJSONPath path
+
+    result <- case mResult of
+      Just r -> pure r
+      Nothing -> do
+        expectationFailure "JSONPath execution timed out"
+        undefined
+
+    result `shouldSatisfy` isLeft
