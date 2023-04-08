@@ -33,7 +33,7 @@ data Test = Test
   }
   deriving (Eq, Show, Generic)
 
-data CTS = CTS
+newtype CTS = CTS
   { tests :: [Test]
   }
   deriving (Eq, Show, Generic)
