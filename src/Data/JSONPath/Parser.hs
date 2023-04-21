@@ -72,7 +72,13 @@ sqBrKeyChild =
   inSqBr $ ignoreSurroundingSpace quotedString
 
 dotKeyChild :: Parser Text
-dotKeyChild = char '.' *> takeWhile1P Nothing (\c -> Char.isAlphaNum c || c == '-' || c == '_')
+dotKeyChild = do
+  _ <- char '.'
+  let firstChar c = Char.isAlpha c || c == '_' || not (Char.isAscii c)
+      restChar c = Char.isNumber c || firstChar c
+  Text.cons
+    <$> satisfy firstChar
+    <*> takeWhileP Nothing restChar
 
 anyChild :: Parser JSONPathElement
 anyChild = ignoreSurroundingSpace $ AnyChild <$ (void (string ".*") <|> void (inSqBr (char '*')))
