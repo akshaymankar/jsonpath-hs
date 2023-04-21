@@ -10,6 +10,7 @@ import qualified Data.Char as Char
 import Data.Functor
 import Data.Functor.Identity
 import Data.JSONPath.Types
+import qualified Data.List.NonEmpty as NonEmpty
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Void (Void)
@@ -287,18 +288,21 @@ hexchar = do
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (a, b, c) = f a b c
 
+-- | __WARNING__: This fails to parse the 'minBound' when used with signed
+-- integers
 boundedDecimal :: forall a. (Bounded a, Integral a) => Parser a
-boundedDecimal = (<?> "integer") $ do
-  digits <- takeWhile1P (Just "integer") Char.isDigit
-  go (toInteger (maxBound @a)) 0 (Text.unpack digits)
+boundedDecimal = (<?> "bounded integer") $ do
+  firstDigit <- digitChar
+  let firstInt = toInteger $ Char.digitToInt firstDigit
+  go (toInteger (maxBound @a)) firstInt [firstDigit]
   where
     go :: Integer -> Integer -> [Char] -> Parser a
-    go _ acc [] = pure $ fromInteger acc
-    go limit acc (d:ds) = do
-      let acc' = acc * 10 + toInteger (Char.digitToInt d)
-      -- TODO: This probably fails to parse 'minBound' when used with signed
-      -- integers
-      if acc' > limit
-        -- TODO: Produce better error when this fails
-        then failure Nothing mempty
-        else go limit acc' ds
+    go limit acc readDigits = do
+      mNextDigit <- optional $ lookAhead digitChar
+      case mNextDigit of
+        Nothing -> pure $ fromInteger acc
+        Just nextDigit -> do
+          let acc' = acc * 10 + toInteger (Char.digitToInt nextDigit)
+          if acc' > limit
+            then unexpected (Label $ NonEmpty.fromList "integer overflow")
+            else anySingle *> go limit acc' (readDigits <> [nextDigit])
