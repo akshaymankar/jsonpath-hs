@@ -80,12 +80,14 @@ executeCondition val1 GreaterThan val2 =
   canCompare val1 val2
     && not (executeCondition val1 SmallerThan val2)
     && not (executeCondition val1 Equal val2)
-executeCondition val GreaterThanOrEqual lit =
-  canCompare val lit
-    && not (executeCondition val SmallerThan lit)
+executeCondition val1 GreaterThanOrEqual val2 =
+  executeCondition val1 Equal val2 ||
+  (canCompare val1 val2
+    && not (executeCondition val1 SmallerThan val2))
 executeCondition val1 SmallerThanOrEqual val2 =
-  canCompare val1 val2
-    && not (executeCondition val1 GreaterThan val2)
+  executeCondition val1 Equal val2 ||
+  (canCompare val1 val2
+    && not (executeCondition val1 GreaterThan val2))
 
 canCompare :: Value -> Value -> Bool
 canCompare (Number _) (Number _) = True
