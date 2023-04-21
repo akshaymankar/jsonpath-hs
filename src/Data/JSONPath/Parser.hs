@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -39,7 +40,7 @@ indexChild :: Parser JSONPathElement
 indexChild = IndexChild <$> inSqBr indexChildWithoutBrackets
 
 indexChildWithoutBrackets :: Parser Int
-indexChildWithoutBrackets = ignoreSurroundingSpace $ L.signed space L.decimal
+indexChildWithoutBrackets = ignoreSurroundingSpace $ L.signed space boundedDecimal
 
 slice :: Parser JSONPathElement
 slice =
@@ -55,15 +56,15 @@ sliceWithoutBrackets = do
   where
     parseStart :: Parser (Maybe Int)
     parseStart =
-      ignoreSurroundingSpace (optional (L.signed space L.decimal))
+      ignoreSurroundingSpace (optional (L.signed space boundedDecimal))
         <* char ':'
 
     parseEnd =
-      ignoreSurroundingSpace $ optional $ L.signed space L.decimal
+      ignoreSurroundingSpace $ optional $ L.signed space boundedDecimal
 
     parseStep =
       optional (char ':')
-        *> ignoreSurroundingSpace (optional (L.signed space L.decimal))
+        *> ignoreSurroundingSpace (optional (L.signed space boundedDecimal))
 
 keyChild :: Parser JSONPathElement
 keyChild = KeyChild <$> (try sqBrKeyChild <|> dotKeyChild)
@@ -285,3 +286,19 @@ hexchar = do
 
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (a, b, c) = f a b c
+
+boundedDecimal :: forall a. (Bounded a, Integral a) => Parser a
+boundedDecimal = (<?> "integer") $ do
+  digits <- takeWhile1P (Just "integer") Char.isDigit
+  go (toInteger (maxBound @a)) 0 (Text.unpack digits)
+  where
+    go :: Integer -> Integer -> [Char] -> Parser a
+    go _ acc [] = pure $ fromInteger acc
+    go limit acc (d:ds) = do
+      let acc' = acc * 10 + toInteger (Char.digitToInt d)
+      -- TODO: This probably fails to parse 'minBound' when used with signed
+      -- integers
+      if acc' > limit
+        -- TODO: Produce better error when this fails
+        then failure Nothing mempty
+        else go limit acc' ds
