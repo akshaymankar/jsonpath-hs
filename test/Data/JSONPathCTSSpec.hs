@@ -23,6 +23,8 @@ import System.Timeout
 import Test.Hspec
 import Test.Hspec.Megaparsec
 import Text.Megaparsec
+import qualified Data.Char as Char
+import qualified Data.Text as Text
 
 data Test = Test
   { name :: Text,
@@ -73,9 +75,14 @@ group CTS {..} = do
 timeLimit :: Int
 timeLimit = 100000
 
+testName :: Text -> Text -> String
+testName name path = if Text.all Char.isPrint path
+           then unpack name <> ": " <> unpack path
+           else unpack name <> ": " <> show path
+
 test :: Test -> Spec
-test (Test name path (Just testData) (Just expected) _) =
-  it (unpack path) $ do
+test (Test name path (Just testData) (Just expected) _) = do
+  it (testName name path) $ do
     mResult <-
       liftIO $
         timeout timeLimit $ do
@@ -99,7 +106,7 @@ test (Test name path (Just testData) (Just expected) _) =
       Bool False -> result `shouldSatisfy` isLeft
       v -> expectationFailure $ "Invalid result in test data " <> LazyText.unpack (encodeToLazyText v)
 test (Test name path _ _ _) =
-  it (unpack path) $ do
+  it (testName name path) $ do
     mResult <-
       liftIO $
         timeout timeLimit $ do
