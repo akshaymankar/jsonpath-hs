@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Data.JSONPath.Parser (jsonPathElement, jsonPath) where
@@ -12,7 +13,7 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Void (Void)
 import Text.Megaparsec as P
-import Text.Megaparsec.Char (char, space, string)
+import Text.Megaparsec.Char (char, digitChar, space, string)
 import qualified Text.Megaparsec.Char.Lexer as L
 
 type Parser = P.ParsecT Void Text Identity
@@ -227,7 +228,60 @@ quotedString :: Parser Text
 quotedString = ignoreSurroundingSpace $ Text.pack <$> (inQuotes '"' <|> inQuotes '\'')
   where
     inQuotes quoteChar =
-      char quoteChar *> manyTill L.charLiteral (char quoteChar)
+      char quoteChar *> manyTill (charLiteral quoteChar) (char quoteChar)
+
+charLiteral :: Char -> Parser Char
+charLiteral q =
+  unescaped
+    <|> (char '\\' *> (char q <|> escapable))
+    <|> (if q == '\'' then char '"' else char '\'')
+
+unescaped :: Parser Char
+unescaped = satisfy $ \c -> c >= ' ' && c /= '\'' && c /= '"' && c /= '\\'
+
+escapable :: Parser Char
+escapable = bs <|> ff <|> lf <|> cr <|> ht <|> slash <|> backslash <|> hexchar
+  where
+    bs = char 'b' $> '\BS'
+    ff = char 'f' $> '\FF'
+    lf = char 'n' $> '\LF'
+    cr = char 'r' $> '\CR'
+    ht = char 't' $> '\HT'
+    slash = char '/'
+    backslash = char '\\'
+
+hexchar :: Parser Char
+hexchar = do
+  _ <- char 'u'
+  h0 <- hexDigit
+  chr <- if h0 /= 'D'
+    then twoMore h0 =<< hexDigit
+    else do
+      h1 <- digitChar <|> a <|> b
+      if Char.isOctDigit h1
+        then twoMore h0 h1
+        else surrogate h0 h1
+  pure $ Char.chr chr
+  where
+    surrogate h0 h1 = do
+      high <- twoMore h0 h1
+      _ <- string "\\u"
+      d' <- d
+      cdef <- c <|> d <|> e <|> f
+      low <- twoMore d' cdef
+      pure $ 0x10000 + ((high - 0xD800) * 0x400) + (low - 0xDC00)
+    twoMore h0 h1 = do
+      h2 <- hexDigit
+      h3 <- hexDigit
+      pure . read @Int $ "0x" <> [h0, h1, h2, h3]
+    hexDigit :: Parser Char =
+      digitChar <|> a <|> b <|> c <|> d <|> e <|> f
+    a = char 'A' <|> Char.toUpper <$> char 'a'
+    b = char 'B' <|> Char.toUpper <$> char 'b'
+    c = char 'C' <|> Char.toUpper <$> char 'c'
+    d = char 'D' <|> Char.toUpper <$> char 'd'
+    e = char 'E' <|> Char.toUpper <$> char 'e'
+    f = char 'F' <|> Char.toUpper <$> char 'f'
 
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (a, b, c) = f a b c
