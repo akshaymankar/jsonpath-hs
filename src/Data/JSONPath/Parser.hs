@@ -256,13 +256,14 @@ hexchar :: Parser Char
 hexchar = do
   _ <- char 'u'
   h0 <- hexDigit
-  chr <- if h0 /= 'D'
-    then twoMore h0 =<< hexDigit
-    else do
-      h1 <- digitChar <|> a <|> b
-      if Char.isOctDigit h1
-        then twoMore h0 h1
-        else surrogate h0 h1
+  chr <-
+    if h0 /= 'D'
+      then twoMore h0 =<< hexDigit
+      else do
+        h1 <- digitChar <|> a <|> b
+        if Char.isOctDigit h1
+          then twoMore h0 h1
+          else surrogate h0 h1
   pure $ Char.chr chr
   where
     surrogate h0 h1 = do
