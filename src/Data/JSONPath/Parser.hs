@@ -11,6 +11,7 @@ import Data.Functor
 import Data.Functor.Identity
 import Data.JSONPath.Types
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Void (Void)
@@ -294,8 +295,15 @@ uncurry3 f (a, b, c) = f a b c
 boundedDecimal :: forall a. (Bounded a, Integral a) => Parser a
 boundedDecimal = (<?> "bounded integer") $ do
   firstDigit <- digitChar
-  let firstInt = toInteger $ Char.digitToInt firstDigit
-  go (toInteger (maxBound @a)) firstInt [firstDigit]
+  isLeadingZero <-
+    if firstDigit == '0'
+      then isJust <$> lookAhead (optional digitChar)
+      else pure False
+  if isLeadingZero
+    then unexpected (Label $ NonEmpty.fromList "leading zero")
+    else do
+      let firstInt = toInteger $ Char.digitToInt firstDigit
+      go (toInteger (maxBound @a)) firstInt [firstDigit]
   where
     go :: Integer -> Integer -> [Char] -> Parser a
     go limit acc readDigits = do
