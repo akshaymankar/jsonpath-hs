@@ -59,13 +59,6 @@ executeConditionOnMaybes (Just _) NotEqual Nothing = True
 executeConditionOnMaybes _ _ _ = False
 
 {- ORMOLU_DISABLE -}
-isEqualTo :: Value -> Value -> Bool
-(Object _) `isEqualTo` _          = False
-_          `isEqualTo` (Object _) = False
-(Array _)  `isEqualTo` _          = False
-_          `isEqualTo` (Array _)  = False
-val1       `isEqualTo` val2       = val1 == val2
-
 isSmallerThan :: Value -> Value -> Bool
 (Number n1) `isSmallerThan` (Number n2) = n1 < n2
 (String s1) `isSmallerThan` (String s2) = s1 < s2
@@ -74,7 +67,7 @@ _           `isSmallerThan` _ = False
 
 executeCondition :: Value -> Condition -> Value -> Bool
 executeCondition val1 NotEqual val2 = not (executeCondition val1 Equal val2)
-executeCondition val1 Equal val2 = val1 `isEqualTo` val2
+executeCondition val1 Equal val2 = val1 == val2
 executeCondition val1 SmallerThan val2 = val1 `isSmallerThan` val2
 executeCondition val1 GreaterThan val2 =
   canCompare val1 val2
