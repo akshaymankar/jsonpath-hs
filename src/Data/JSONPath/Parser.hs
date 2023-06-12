@@ -28,15 +28,14 @@ jsonPath endParser = do
 
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement =
-  ignoreSurroundingSpace $
-    try anyChild
-      <|> try keyChild
-      <|> try slice
-      <|> try indexChild
-      <|> try union
-      <|> try filterParser
-      <|> try search
-      <|> searchBeginningWithSlice
+  try anyChild
+    <|> try keyChild
+    <|> try slice
+    <|> try indexChild
+    <|> try union
+    <|> try filterParser
+    <|> try search
+    <|> searchBeginningWithSlice
 
 indexChild :: Parser JSONPathElement
 indexChild = IndexChild <$> inSqBr indexChildWithoutBrackets
@@ -213,10 +212,10 @@ inSqBr :: Parser a -> Parser a
 inSqBr p = openingSqBr *> p <* closingSqBr
 
 openingSqBr :: Parser Char
-openingSqBr = ignoreSurroundingSpace (char '[')
+openingSqBr = char '['
 
 closingSqBr :: Parser Char
-closingSqBr = ignoreSurroundingSpace (char ']')
+closingSqBr = char ']'
 
 inParens :: Parser a -> Parser a
 inParens p = openingParen *> p <* closingParen
