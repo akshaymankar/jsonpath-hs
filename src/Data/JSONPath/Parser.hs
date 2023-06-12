@@ -134,7 +134,11 @@ comparisionFilterExpr endParser = do
 
 existsFilterExpr :: Parser a -> Parser FilterExpr
 existsFilterExpr endParser =
-  ExistsExpr <$> singularPath endParser
+  ExistsExpr <$> filterQuery endParser
+
+filterQuery :: Parser a -> Parser FilterQuery
+filterQuery endParser =
+  FilterQuery <$> beginningPoint <*> jsonPath endParser
 
 singularPath :: Parser a -> Parser SingularPath
 singularPath endParser =

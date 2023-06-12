@@ -8,7 +8,7 @@ import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as Map
 import qualified Data.Foldable as Foldable
 import Data.JSONPath.Types
-import Data.Maybe (fromMaybe, isJust, maybeToList)
+import Data.Maybe (fromMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Vector as V
 
@@ -197,8 +197,10 @@ filterExprPred expr rootVal val =
       let val1 = comparableToValue cmp1 rootVal val
           val2 = comparableToValue cmp2 rootVal val
        in executeConditionOnMaybes val1 cond val2
-    ExistsExpr path ->
-      isJust $ executeSingularPath path rootVal val
+    ExistsExpr (FilterQuery CurrentObject path) ->
+      not . null $ executeJSONPath path val
+    ExistsExpr (FilterQuery Root path) ->
+      not . null $ executeJSONPath path rootVal
     Or e1 e2 ->
       filterExprPred e1 rootVal val || filterExprPred e2 rootVal val
     And e1 e2 ->

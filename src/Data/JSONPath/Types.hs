@@ -7,6 +7,7 @@ module Data.JSONPath.Types
     FilterExpr (..),
     SingularPathElement (..),
     SingularPath (..),
+    FilterQuery(..)
   )
 where
 
@@ -47,11 +48,14 @@ data Condition
   deriving (Show, Eq)
 
 data FilterExpr
-  = ExistsExpr SingularPath
+  = ExistsExpr FilterQuery
   | ComparisonExpr Comparable Condition Comparable
   | And FilterExpr FilterExpr
   | Or FilterExpr FilterExpr
   | Not FilterExpr
+  deriving (Show, Eq)
+
+data FilterQuery = FilterQuery BeginningPoint [JSONPathElement]
   deriving (Show, Eq)
 
 -- | Elements which can occur inside a union
