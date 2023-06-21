@@ -18,3 +18,15 @@ I have copied a few of the tests from there, I will probably just sub-module the
 
 ## Uses
 I am using this library to support GCP authentication in the [Kubernetes haskell client](http://github.com/kubernetes-client/haskell).
+
+## Tests
+
+To run the tests, first ensure the CTS submodule is initialised:
+```
+git submodule update --init
+```
+
+then use Cabal to run the tests:
+```
+cabal test
+```
