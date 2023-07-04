@@ -30,12 +30,32 @@ data SingularPathElement
   | Index Int
   deriving (Show, Eq)
 
+data FunctionExpr
+  = FunctionExpr FunctionName [FunctionArgument]
+  deriving (Show, Eq)
+
+data FunctionName
+  = Length
+  | Count
+  | Match
+  | Search
+  | Value
+  deriving (Show, Eq)
+
+data FunctionArgument
+  = ArgLiteral Comparable -- except CmpPath or CmpFun
+  | ArgFilterQuery FilterQuery
+  | ArgLogicalExpr FilterExpr
+  | ArgFunctionExpr FunctionExpr
+  deriving (Show, Eq)
+
 data Comparable
   = CmpNumber Scientific
   | CmpString Text
   | CmpBool Bool
   | CmpNull
   | CmpPath SingularPath
+  | CmpFun FunctionExpr
   deriving (Show, Eq)
 
 data Condition
@@ -49,6 +69,7 @@ data Condition
 
 data FilterExpr
   = ExistsExpr FilterQuery
+  | ExistsFun FunctionExpr
   | ComparisonExpr Comparable Condition Comparable
   | And FilterExpr FilterExpr
   | Or FilterExpr FilterExpr
