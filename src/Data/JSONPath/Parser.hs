@@ -203,6 +203,46 @@ comparable endParser = do
     <|> CmpBool <$> bool
     <|> CmpNull <$ string "null"
     <|> CmpPath <$> singularPath endParser
+    <|> CmpFun <$> functionExpr endParser
+
+functionExpr :: Parser a -> Parser FunctionExpr
+functionExpr endParser = do
+  FunctionExpr
+    <$> functionName
+    <*> inParens (functionArgs endParser)
+
+functionArgs :: Parser a -> Parser [FunctionArgument]
+functionArgs endParser = do
+  firstArg <- functionArgument endParser
+  restArgs <- many (char ',' *> functionArgument endParser)
+  pure (firstArg : restArgs)
+
+functionArgument :: Parser a -> Parser FunctionArgument
+functionArgument endParser =
+  (ArgLiteral <$> try (comparable endParser)) -- TODO: need to prohibit CmpPath or CmpFun
+    <|> (ArgFilterQuery <$> filterQuery')
+    <|> (ArgLogicalExpr <$> filterExpr endParser)
+    <|> ArgFunctionExpr <$> functionExpr endParser
+
+-- filterQuery' is like filterQuery except it can parse a prefix of the input
+-- TODO: unify filterQuery' and filterQuery
+filterQuery' :: Parser FilterQuery
+filterQuery' =
+  FilterQuery <$> beginningPoint <*> jsonPath'
+
+-- jsonPath' is like jsonPath except it can parse a prefix of the input
+-- TODO: unify jsonPath' and jsonPath
+jsonPath' :: Parser [JSONPathElement]
+jsonPath' = do
+  some jsonPathElement
+
+functionName :: Parser FunctionName
+functionName =
+  FunLength <$ string "length"
+    <|> FunCount <$ string "count"
+    <|> FunMatch <$ string "match"
+    <|> FunSearch <$ string "search"
+    <|> FunValue <$ string "value"
 
 bool :: Parser Bool
 bool =

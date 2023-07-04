@@ -7,7 +7,10 @@ module Data.JSONPath.Types
     FilterExpr (..),
     SingularPathElement (..),
     SingularPath (..),
-    FilterQuery(..)
+    FilterQuery(..),
+    FunctionExpr (..),
+    FunctionArgument (..),
+    FunctionName (..)
   )
 where
 
@@ -35,11 +38,11 @@ data FunctionExpr
   deriving (Show, Eq)
 
 data FunctionName
-  = Length
-  | Count
-  | Match
-  | Search
-  | Value
+  = FunLength
+  | FunCount
+  | FunMatch
+  | FunSearch
+  | FunValue
   deriving (Show, Eq)
 
 data FunctionArgument
