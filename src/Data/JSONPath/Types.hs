@@ -37,13 +37,7 @@ data FunctionExpr
   = FunctionExpr FunctionName [FunctionArgument]
   deriving (Show, Eq)
 
-data FunctionName
-  = FunLength
-  | FunCount
-  | FunMatch
-  | FunSearch
-  | FunValue
-  deriving (Show, Eq)
+type FunctionName = Text
 
 data FunctionArgument
   = ArgLiteral Comparable -- except CmpPath or CmpFun

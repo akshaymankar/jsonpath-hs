@@ -12,7 +12,7 @@ import Data.Functor.Identity
 import Data.JSONPath.Types
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (isJust)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import qualified Data.Text as Text
 import Data.Void (Void)
 import Text.Megaparsec as P
@@ -236,14 +236,20 @@ jsonPath' :: Parser [JSONPathElement]
 jsonPath' = do
   some jsonPathElement
 
+-- Parse a function name according to the IETF draft JSONPath spec
 functionName :: Parser FunctionName
-functionName =
-  -- Note: the following code relies on the function names having distinct first characters.
-  FunLength <$ string "length"
-    <|> FunCount <$ string "count"
-    <|> FunMatch <$ string "match"
-    <|> FunSearch <$ string "search"
-    <|> FunValue <$ string "value"
+functionName = do
+  firstChar <- functionNameFirst
+  restChars <- many functionNameChar
+  pure $ pack (firstChar : restChars)
+
+functionNameFirst :: Parser Char
+functionNameFirst = satisfy Char.isLower <?> "lowercase character"
+
+functionNameChar :: Parser Char
+functionNameChar = satisfy isFunctionNameChar <?> "lowercase character, digit, or _"
+  where isFunctionNameChar t =
+          Char.isLower  t || t == '_' || Char.isDigit t
 
 bool :: Parser Bool
 bool =
