@@ -238,6 +238,7 @@ jsonPath' = do
 
 functionName :: Parser FunctionName
 functionName =
+  -- Note: the following code relies on the function names having distinct first characters.
   FunLength <$ string "length"
     <|> FunCount <$ string "count"
     <|> FunMatch <$ string "match"
