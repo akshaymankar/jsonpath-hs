@@ -238,7 +238,7 @@ filterQuery' =
 -- TODO: unify jsonPath' and jsonPath
 jsonPath' :: Parser [JSONPathElement]
 jsonPath' = do
-  some jsonPathElement
+  many jsonPathElement
 
 -- Parse a function name according to the IETF draft JSONPath spec
 functionName :: Parser FunctionName
