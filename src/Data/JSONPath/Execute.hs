@@ -189,6 +189,7 @@ comparableToValue (CmpBool b) _ _ = Just $ Bool b
 comparableToValue CmpNull _ _ = Just Null
 comparableToValue (CmpPath p) rootVal val =
   executeSingularPath p rootVal val
+comparableToValue (CmpFun f) rootVal val = undefined -- temporarily
 
 filterExprPred :: FilterExpr -> Value -> Value -> Bool
 filterExprPred expr rootVal val =

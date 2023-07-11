@@ -198,12 +198,16 @@ condition =
 
 comparable :: Parser a -> Parser Comparable
 comparable endParser = do
+  compLiteral endParser
+    <|> CmpPath <$> singularPath endParser
+    <|> CmpFun <$> functionExpr endParser
+
+compLiteral :: Parser a -> Parser Comparable
+compLiteral endParser = do
   CmpNumber <$> L.scientific
     <|> CmpString <$> quotedString
     <|> CmpBool <$> bool
     <|> CmpNull <$ string "null"
-    <|> CmpPath <$> singularPath endParser
-    <|> CmpFun <$> functionExpr endParser
 
 functionExpr :: Parser a -> Parser FunctionExpr
 functionExpr endParser = do
@@ -219,7 +223,7 @@ functionArgs endParser = do
 
 functionArgument :: Parser a -> Parser FunctionArgument
 functionArgument endParser =
-  (ArgLiteral <$> try (comparable endParser)) -- TODO: need to prohibit CmpPath or CmpFun
+  (ArgLiteral <$> try (compLiteral endParser))
     <|> (ArgFilterQuery <$> filterQuery')
     <|> (ArgLogicalExpr <$> filterExpr endParser)
     <|> ArgFunctionExpr <$> functionExpr endParser
