@@ -4,7 +4,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.JSONPath.Parser (jsonPathElement, jsonPath) where
+-- TODO: hide functionExpr from external API of this project
+module Data.JSONPath.Parser (jsonPathElement, jsonPath, functionExpr) where
 
 import qualified Data.Char as Char
 import Data.Functor
@@ -18,6 +19,7 @@ import Data.Void (Void)
 import Text.Megaparsec as P
 import Text.Megaparsec.Char (char, digitChar, space, string)
 import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Megaparsec.Debug (dbg)
 
 type Parser = P.ParsecT Void Text Identity
 
@@ -109,7 +111,7 @@ filterExpr :: Parser a -> Parser FilterExpr
 filterExpr endParser =
   try (orFilterExpr endParser)
     <|> try (andFilterExpr endParser)
-    <|> basicFilterExpr endParser
+    <|> dbg "basicFilterExpr" (basicFilterExpr endParser)
 
 basicFilterExpr :: Parser a -> Parser FilterExpr
 basicFilterExpr endParser = do
@@ -128,7 +130,7 @@ comparisionFilterExpr endParser = do
     ComparisonExpr
       <$> comparable condition
       <*> condition
-      <*> comparable endParser
+      <*> dbg "comparable" (comparable endParser)
   _ <- lookAhead endParser
   pure expr
 
@@ -213,20 +215,20 @@ functionExpr :: Parser a -> Parser FunctionExpr
 functionExpr endParser = do
   FunctionExpr
     <$> functionName
-    <*> inParens (functionArgs endParser)
+    <*> inParens (dbg "arg list" (functionArgs endParser))
 
 functionArgs :: Parser a -> Parser [FunctionArgument]
 functionArgs endParser = do
-  firstArg <- functionArgument endParser
-  restArgs <- many (char ',' *> functionArgument endParser)
+  firstArg <- dbg "first arg" (functionArgument endParser)
+  restArgs <- many (char ',' *> dbg "later arg" (functionArgument endParser))
   pure (firstArg : restArgs)
 
 functionArgument :: Parser a -> Parser FunctionArgument
 functionArgument endParser =
-  (ArgLiteral <$> try (compLiteral endParser))
-    <|> (ArgFilterQuery <$> filterQuery')
+  (ArgFilterQuery <$> filterQuery')
     <|> (ArgLogicalExpr <$> filterExpr endParser)
-    <|> ArgFunctionExpr <$> functionExpr endParser
+    <|> try (ArgFunctionExpr <$> functionExpr endParser)
+    <|> (ArgLiteral <$> compLiteral endParser)
 
 -- filterQuery' is like filterQuery except it can parse a prefix of the input
 -- TODO: unify filterQuery' and filterQuery
@@ -252,8 +254,9 @@ functionNameFirst = satisfy Char.isLower <?> "lowercase character"
 
 functionNameChar :: Parser Char
 functionNameChar = satisfy isFunctionNameChar <?> "lowercase character, digit, or _"
-  where isFunctionNameChar t =
-          Char.isLower  t || t == '_' || Char.isDigit t
+  where
+    isFunctionNameChar t =
+      Char.isLower t || t == '_' || Char.isDigit t
 
 bool :: Parser Bool
 bool =
