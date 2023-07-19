@@ -117,7 +117,7 @@ basicFilterExpr :: Parser a -> Parser FilterExpr
 basicFilterExpr endParser = do
   maybeNot <- optional (char '!')
   expr <-
-    try (comparisionFilterExpr endParser)
+    dbg "comparisonFilterExpr" (try (comparisionFilterExpr endParser))
       <|> try (existsFilterExpr endParser)
       <|> (inParens (filterExpr closingParen) <* lookAhead endParser)
   case maybeNot of
@@ -215,7 +215,7 @@ functionExpr :: Parser a -> Parser FunctionExpr
 functionExpr endParser = do
   FunctionExpr
     <$> functionName
-    <*> inParens (dbg "arg list" (functionArgs endParser))
+    <*> inParens (dbg "arg list" (functionArgs (char ')')))
 
 functionArgs :: Parser a -> Parser [FunctionArgument]
 functionArgs endParser = do
