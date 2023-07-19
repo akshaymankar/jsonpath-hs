@@ -4,7 +4,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
--- TODO: hide functionExpr from external API of this project
 module Data.JSONPath.Parser (jsonPathElement, jsonPath, functionExpr) where
 
 import qualified Data.Char as Char
