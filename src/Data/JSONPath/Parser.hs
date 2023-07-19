@@ -25,7 +25,12 @@ type Parser = P.ParsecT Void Text Identity
 jsonPath :: Parser a -> Parser [JSONPathElement]
 jsonPath endParser = do
   _ <- optional $ char '$'
-  manyTill jsonPathElement (hidden $ lookAhead endParser)
+  e <- jsonPathElements
+  _ <- lookAhead endParser
+  return e
+
+jsonPathElements :: Parser [JSONPathElement]
+jsonPathElements = many jsonPathElement
 
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement =
@@ -135,11 +140,17 @@ comparisionFilterExpr endParser = do
 
 existsFilterExpr :: Parser a -> Parser FilterExpr
 existsFilterExpr endParser =
-  ExistsExpr <$> filterQuery endParser
+  ExistsExpr <$> filterQueryEnding endParser
 
-filterQuery :: Parser a -> Parser FilterQuery
-filterQuery endParser =
-  FilterQuery <$> beginningPoint <*> jsonPath endParser
+filterQueryEnding :: Parser a -> Parser FilterQuery
+filterQueryEnding endParser = do
+  e <- filterQuery
+  _ <- lookAhead endParser
+  return e
+
+filterQuery :: Parser FilterQuery
+filterQuery =
+  FilterQuery <$> beginningPoint <*> jsonPathElements
 
 singularPath :: Parser a -> Parser SingularPath
 singularPath endParser =
@@ -224,22 +235,10 @@ functionArgs endParser = do
 
 functionArgument :: Parser a -> Parser FunctionArgument
 functionArgument endParser =
-  (ArgFilterQuery <$> filterQuery')
+  (ArgFilterQuery <$> filterQuery)
     <|> (ArgLogicalExpr <$> filterExpr endParser)
     <|> try (ArgFunctionExpr <$> functionExpr endParser)
     <|> (ArgLiteral <$> compLiteral endParser)
-
--- filterQuery' is like filterQuery except it can parse a prefix of the input
--- TODO: unify filterQuery' and filterQuery
-filterQuery' :: Parser FilterQuery
-filterQuery' =
-  FilterQuery <$> beginningPoint <*> jsonPath'
-
--- jsonPath' is like jsonPath except it can parse a prefix of the input
--- TODO: unify jsonPath' and jsonPath
-jsonPath' :: Parser [JSONPathElement]
-jsonPath' = do
-  many jsonPathElement
 
 -- Parse a function name according to the IETF draft JSONPath spec
 functionName :: Parser FunctionName
