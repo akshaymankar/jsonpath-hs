@@ -24,6 +24,9 @@ spec = do
     it "parses literal argument" $
       parse (functionExpr eof) "" "foo(true)"
         `shouldParse` FunctionExpr "foo" [ArgLiteral $ CmpBool True]
+    it "parses more than one argument" $
+      parse (functionExpr eof) "" "foo( true, $.foo )"
+        `shouldParse` FunctionExpr "foo" [ArgLiteral $ CmpBool True, ArgFilterQuery $ FilterQuery Root [KeyChild "foo"]]
     it "recovers from match of literal argument" $
       parse (functionExpr eof) "" "foo(true == true)"
         `shouldParse` FunctionExpr "foo" [ArgLogicalExpr $ ComparisonExpr (CmpBool True) Equal (CmpBool True)]

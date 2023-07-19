@@ -220,7 +220,7 @@ functionExpr endParser = do
 functionArgs :: Parser a -> Parser [FunctionArgument]
 functionArgs endParser = do
   firstArg <- dbg "first arg" (functionArgument endParser)
-  restArgs <- many (char ',' *> dbg "later arg" (functionArgument endParser))
+  restArgs <- many $ ignoreSurroundingSpace (ignoreSurroundingSpace (char ',') *> dbg "later arg" (functionArgument endParser))
   pure (firstArg : restArgs)
 
 functionArgument :: Parser a -> Parser FunctionArgument
