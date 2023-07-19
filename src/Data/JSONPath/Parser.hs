@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.JSONPath.Parser (jsonPathElement, jsonPath) where
+module Data.JSONPath.Parser (jsonPathElement, jsonPath, functionExpr) where
 
 import qualified Data.Char as Char
 import Data.Functor
@@ -12,19 +12,25 @@ import Data.Functor.Identity
 import Data.JSONPath.Types
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (isJust)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import qualified Data.Text as Text
 import Data.Void (Void)
 import Text.Megaparsec as P
 import Text.Megaparsec.Char (char, digitChar, space, string)
 import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Megaparsec.Debug (dbg)
 
 type Parser = P.ParsecT Void Text Identity
 
 jsonPath :: Parser a -> Parser [JSONPathElement]
 jsonPath endParser = do
   _ <- optional $ char '$'
-  manyTill jsonPathElement (hidden $ lookAhead endParser)
+  e <- jsonPathElements
+  _ <- lookAhead endParser
+  return e
+
+jsonPathElements :: Parser [JSONPathElement]
+jsonPathElements = many jsonPathElement
 
 jsonPathElement :: Parser JSONPathElement
 jsonPathElement =
@@ -109,13 +115,13 @@ filterExpr :: Parser a -> Parser FilterExpr
 filterExpr endParser =
   try (orFilterExpr endParser)
     <|> try (andFilterExpr endParser)
-    <|> basicFilterExpr endParser
+    <|> dbg "basicFilterExpr" (basicFilterExpr endParser)
 
 basicFilterExpr :: Parser a -> Parser FilterExpr
 basicFilterExpr endParser = do
   maybeNot <- optional (char '!')
   expr <-
-    try (comparisionFilterExpr endParser)
+    dbg "comparisonFilterExpr" (try (comparisionFilterExpr endParser))
       <|> try (existsFilterExpr endParser)
       <|> (inParens (filterExpr closingParen) <* lookAhead endParser)
   case maybeNot of
@@ -128,17 +134,23 @@ comparisionFilterExpr endParser = do
     ComparisonExpr
       <$> comparable condition
       <*> condition
-      <*> comparable endParser
+      <*> dbg "comparable" (comparable endParser)
   _ <- lookAhead endParser
   pure expr
 
 existsFilterExpr :: Parser a -> Parser FilterExpr
 existsFilterExpr endParser =
-  ExistsExpr <$> filterQuery endParser
+  ExistsExpr <$> filterQueryEnding endParser
 
-filterQuery :: Parser a -> Parser FilterQuery
-filterQuery endParser =
-  FilterQuery <$> beginningPoint <*> jsonPath endParser
+filterQueryEnding :: Parser a -> Parser FilterQuery
+filterQueryEnding endParser = do
+  e <- filterQuery
+  _ <- lookAhead endParser
+  return e
+
+filterQuery :: Parser FilterQuery
+filterQuery =
+  FilterQuery <$> beginningPoint <*> jsonPathElements
 
 singularPath :: Parser a -> Parser SingularPath
 singularPath endParser =
@@ -198,11 +210,51 @@ condition =
 
 comparable :: Parser a -> Parser Comparable
 comparable endParser = do
-  CmpNumber <$> L.scientific
-    <|> CmpString <$> quotedString
-    <|> CmpBool <$> bool
-    <|> CmpNull <$ string "null"
+  CmpLiteral <$> compLiteral endParser
     <|> CmpPath <$> singularPath endParser
+    <|> CmpFun <$> functionExpr endParser
+
+compLiteral :: Parser a -> Parser Literal
+compLiteral endParser = do
+  LitNumber <$> L.scientific
+    <|> LitString <$> quotedString
+    <|> LitBool <$> bool
+    <|> LitNull <$ string "null"
+
+functionExpr :: Parser a -> Parser FunctionExpr
+functionExpr endParser = do
+  FunctionExpr
+    <$> functionName
+    <*> inParens (dbg "arg list" (functionArgs (char ')')))
+
+functionArgs :: Parser a -> Parser [FunctionArgument]
+functionArgs endParser = do
+  firstArg <- dbg "first arg" (functionArgument endParser)
+  restArgs <- many $ ignoreSurroundingSpace (ignoreSurroundingSpace (char ',') *> dbg "later arg" (functionArgument endParser))
+  pure (firstArg : restArgs)
+
+functionArgument :: Parser a -> Parser FunctionArgument
+functionArgument endParser =
+  (ArgFilterQuery <$> filterQuery)
+    <|> (ArgLogicalExpr <$> filterExpr endParser)
+    <|> try (ArgFunctionExpr <$> functionExpr endParser)
+    <|> (ArgLiteral <$> compLiteral endParser)
+
+-- Parse a function name according to the IETF draft JSONPath spec
+functionName :: Parser FunctionName
+functionName = do
+  firstChar <- functionNameFirst
+  restChars <- many functionNameChar
+  pure $ pack (firstChar : restChars)
+
+functionNameFirst :: Parser Char
+functionNameFirst = satisfy Char.isLower <?> "lowercase character"
+
+functionNameChar :: Parser Char
+functionNameChar = satisfy isFunctionNameChar <?> "lowercase character, digit, or _"
+  where
+    isFunctionNameChar t =
+      Char.isLower t || t == '_' || Char.isDigit t
 
 bool :: Parser Bool
 bool =

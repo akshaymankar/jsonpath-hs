@@ -2,17 +2,22 @@ module Data.JSONPath.Types
   ( BeginningPoint (..),
     Condition (..),
     Comparable (..),
+    Literal (..),
     JSONPathElement (..),
     UnionElement (..),
     FilterExpr (..),
     SingularPathElement (..),
     SingularPath (..),
-    FilterQuery(..)
+    FilterQuery(..),
+    FunctionExpr (..),
+    FunctionArgument (..),
+    FunctionName (..)
   )
 where
 
 import Data.Scientific (Scientific)
 import Data.Text
+import Data.Aeson.Decoding.Tokens (Lit(LitNull))
 
 data BeginningPoint
   = Root
@@ -30,12 +35,30 @@ data SingularPathElement
   | Index Int
   deriving (Show, Eq)
 
+data FunctionExpr
+  = FunctionExpr FunctionName [FunctionArgument]
+  deriving (Show, Eq)
+
+type FunctionName = Text
+
+data FunctionArgument
+  = ArgLiteral Literal
+  | ArgFilterQuery FilterQuery
+  | ArgLogicalExpr FilterExpr
+  | ArgFunctionExpr FunctionExpr
+  deriving (Show, Eq)
+
+data Literal
+  = LitNumber Scientific
+  | LitString Text
+  | LitBool Bool
+  | LitNull
+  deriving (Show, Eq)
+
 data Comparable
-  = CmpNumber Scientific
-  | CmpString Text
-  | CmpBool Bool
-  | CmpNull
+  = CmpLiteral Literal
   | CmpPath SingularPath
+  | CmpFun FunctionExpr
   deriving (Show, Eq)
 
 data Condition
@@ -49,6 +72,7 @@ data Condition
 
 data FilterExpr
   = ExistsExpr FilterQuery
+  | ExistsFun FunctionExpr
   | ComparisonExpr Comparable Condition Comparable
   | And FilterExpr FilterExpr
   | Or FilterExpr FilterExpr

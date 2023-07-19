@@ -6,5 +6,5 @@ module Data.JSONPath
 where
 
 import Data.JSONPath.Execute
-import Data.JSONPath.Parser
+import Data.JSONPath.Parser (jsonPathElement, jsonPath)
 import Data.JSONPath.Types

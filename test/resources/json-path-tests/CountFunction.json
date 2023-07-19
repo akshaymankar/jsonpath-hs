@@ -1,0 +1,15 @@
+{
+    "title" : "Count Function",
+    "data" : [
+        [],
+        [0],
+        [0,1]
+    ],
+    "tests" : [{
+        "path" : "$[?count(@.*)>0]",
+        "result" : [[0],[0,1]]
+    },{
+        "path" : "$[?count(@)==1]",
+        "result" : [[],[0],[0,1]]
+    }]
+}
