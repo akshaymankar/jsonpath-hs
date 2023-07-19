@@ -183,10 +183,10 @@ executeFilter :: FilterExpr -> Value -> [Value] -> [Value]
 executeFilter expr rootVal = Prelude.filter (filterExprPred expr rootVal)
 
 comparableToValue :: Comparable -> Value -> Value -> Maybe Value
-comparableToValue (CmpNumber n) _ _ = Just $ Number n
-comparableToValue (CmpString s) _ _ = Just $ String s
-comparableToValue (CmpBool b) _ _ = Just $ Bool b
-comparableToValue CmpNull _ _ = Just Null
+comparableToValue (CmpLiteral (LitNumber n)) _ _ = Just $ Number n
+comparableToValue (CmpLiteral (LitString s)) _ _ = Just $ String s
+comparableToValue (CmpLiteral (LitBool b)) _ _ = Just $ Bool b
+comparableToValue (CmpLiteral LitNull) _ _ = Just Null
 comparableToValue (CmpPath p) rootVal val =
   executeSingularPath p rootVal val
 comparableToValue (CmpFun f) rootVal val = undefined -- temporarily

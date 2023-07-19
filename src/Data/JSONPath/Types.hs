@@ -2,6 +2,7 @@ module Data.JSONPath.Types
   ( BeginningPoint (..),
     Condition (..),
     Comparable (..),
+    Literal (..),
     JSONPathElement (..),
     UnionElement (..),
     FilterExpr (..),
@@ -16,6 +17,7 @@ where
 
 import Data.Scientific (Scientific)
 import Data.Text
+import Data.Aeson.Decoding.Tokens (Lit(LitNull))
 
 data BeginningPoint
   = Root
@@ -40,17 +42,21 @@ data FunctionExpr
 type FunctionName = Text
 
 data FunctionArgument
-  = ArgLiteral Comparable -- except CmpPath or CmpFun
+  = ArgLiteral Literal
   | ArgFilterQuery FilterQuery
   | ArgLogicalExpr FilterExpr
   | ArgFunctionExpr FunctionExpr
   deriving (Show, Eq)
 
+data Literal
+  = LitNumber Scientific
+  | LitString Text
+  | LitBool Bool
+  | LitNull
+  deriving (Show, Eq)
+
 data Comparable
-  = CmpNumber Scientific
-  | CmpString Text
-  | CmpBool Bool
-  | CmpNull
+  = CmpLiteral Literal
   | CmpPath SingularPath
   | CmpFun FunctionExpr
   deriving (Show, Eq)

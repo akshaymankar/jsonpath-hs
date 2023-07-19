@@ -200,16 +200,16 @@ condition =
 
 comparable :: Parser a -> Parser Comparable
 comparable endParser = do
-  compLiteral endParser
+  CmpLiteral <$> compLiteral endParser
     <|> CmpPath <$> singularPath endParser
     <|> CmpFun <$> functionExpr endParser
 
-compLiteral :: Parser a -> Parser Comparable
+compLiteral :: Parser a -> Parser Literal
 compLiteral endParser = do
-  CmpNumber <$> L.scientific
-    <|> CmpString <$> quotedString
-    <|> CmpBool <$> bool
-    <|> CmpNull <$ string "null"
+  LitNumber <$> L.scientific
+    <|> LitString <$> quotedString
+    <|> LitBool <$> bool
+    <|> LitNull <$ string "null"
 
 functionExpr :: Parser a -> Parser FunctionExpr
 functionExpr endParser = do
