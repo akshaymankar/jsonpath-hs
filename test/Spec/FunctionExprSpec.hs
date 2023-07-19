@@ -27,7 +27,6 @@ spec = do
     it "recovers from match of literal argument" $
       parse (functionExpr eof) "" "foo(true == true)"
         `shouldParse` FunctionExpr "foo" [ArgLogicalExpr $ ComparisonExpr (CmpBool True) Equal (CmpBool True)]
-
-    -- it "ummatched parenthesis parse error" $
-    --   parse (jsonPath eof) "" "$[?foo(@"
-    --     `shouldFailWith` err 8 (ueof <> functionCallMissingClosingParenthesisEtoks <> elabel "white space")
+    it "ummatched parenthesis parse error" $
+      parse (functionExpr eof) "" "foo(@"
+        `shouldFailWith` err 5 (ueof <> functionCallMissingClosingParenthesisEtoks <> elabel "white space")
