@@ -51,7 +51,7 @@ test-suite jsonpath-test
       Paths_jsonpath
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wno-missing-home-modules
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
