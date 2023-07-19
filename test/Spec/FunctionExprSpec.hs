@@ -18,6 +18,18 @@ functionCallMissingClosingParenthesisEtoks =
     <> etoks "."
     <> etoks "["
 
+functionCallMissingArgumentEtoks :: ET Text
+functionCallMissingArgumentEtoks =
+  etoks "false"
+    <> etoks "null"
+    <> etoks "true"
+    <> etoks "!"
+    <> etoks "\""
+    <> etoks "$"
+    <> etoks "'"
+    <> etoks "("
+    <> etoks "@"
+
 spec :: Spec
 spec = do
   describe "function expression" $ do
@@ -37,3 +49,6 @@ spec = do
     it "ummatched parenthesis parse error" $
       parse (functionExpr eof) "" "foo(@"
         `shouldFailWith` err 5 (ueof <> functionCallMissingClosingParenthesisEtoks <> elabel "white space")
+    it "missing argument parse error" $
+      parse (functionExpr eof) "" "foo(, true)"
+        `shouldFailWith` err 4 (utoks ", tru" <> functionCallMissingArgumentEtoks <> elabel "digit" <> elabel "lowercase character" <> elabel "white space")
