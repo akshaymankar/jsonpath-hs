@@ -33,7 +33,7 @@ library
   hs-source-dirs:
       src
   build-depends:
-      aeson >= 2.0.3
+      aeson >=2.0.3
     , megaparsec
     , base >=4.9 && <5
     , scientific
